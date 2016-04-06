@@ -18,7 +18,7 @@
                     <th>Created Time</th>
                     <th>Created By</th>
                 </tr>
-                {{range .Categorys}}
+                {{range .Categories}}
                 <tr>
 
                     <td>{{.ID}}</td>

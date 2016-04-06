@@ -18,8 +18,16 @@ type Category struct {
 	CreatedTime string
 	CreatedBy   string
 }
+type Subcategory struct {
+	ID          int
+	Name        string
+	CreatedTime string
+	CreatedBy   string
+	Category
+}
 
 var categorytemplate *template.Template
+var subcategorytemplate *template.Template
 
 const (
 	dbDrive     = "sqlite3"
@@ -31,11 +39,13 @@ const (
 func init() {
 	flag.Parse()
 	categorytemplate = template.Must(template.New("category.gtpl").ParseFiles("./templates/category.gtpl"))
+	subcategorytemplate = template.Must(template.New("subcategory.gtpl").ParseFiles("./templates/subcategory.gtpl"))
 	glog.Infoln("initial done")
 }
 func main() {
 	http.HandleFunc("/category", CategoryHandler) //设置访问的路由
-	err := http.ListenAndServe(":8888", nil)      //设置监听的端口
+	http.HandleFunc("/subcategory", SubcategoryHandler)
+	err := http.ListenAndServe(":8888", nil) //设置监听的端口
 	if err != nil {
 		glog.Errorf("main->ListenAndServe err: %v\n", err)
 	}
@@ -93,11 +103,11 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 		cates := cate.GetEntity()
 
 		data := struct {
-			Title     string
-			Categorys []Category
+			Title      string
+			Categories []Category
 		}{
-			Title:     "Category",
-			Categorys: cates,
+			Title:      "Category",
+			Categories: cates,
 		}
 		categorytemplate.Execute(w, data)
 	} else if r.Method == "POST" {
@@ -112,5 +122,45 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 			//insert successful
 		}
 		http.Redirect(w, r, "/category", http.StatusMovedPermanently)
+	}
+}
+func (subcate Subcategory) GetEntity() []Subcategory {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Subcategory->GetEntity->open db err: %v\n", err)
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("SELECT ID, Name, CreatedTime, CreatedBy FROM Subcategory where IsDeleted=0 and CategoryID=?")
+	if err != nil {
+		glog.Errorf("Subcategory->GetEntity->stmt err: %v\n", err)
+	}
+	rows, err := stmt.Query(subcate.Category.ID)
+	if err != nil {
+		glog.Errorf("Subcategory->GetEntity->rows err: %v\n", err)
+	}
+	var subcates []Subcategory
+	for rows.Next() {
+		var subcate Subcategory
+		rows.Scan(&subcate.ID, &subcate.Name, &subcate.CreatedTime, &subcate.CreatedBy)
+		subcates = append(subcates, subcate)
+	}
+	return subcates
+}
+func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		var cate Category
+		cates := cate.GetEntity()
+		var subcate Subcategory
+		subcates := subcate.GetEntity()
+		data := struct {
+			Categories    []Category
+			Subcategories []Subcategory
+		}{
+			Categories:    cates,
+			Subcategories: subcates,
+		}
+		subcategorytemplate.Execute(w, data)
+	} else if r.Method == "POST" {
+
 	}
 }
