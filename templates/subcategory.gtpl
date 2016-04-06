@@ -5,12 +5,12 @@
 <body>
     <form action="subcategory" method="POST">
 <div>
-    <select name="category">
+    Category:<select name="category">
         {{range .Categories}}
         <option value="{{.ID}}">{{.Name}}</option>
         {{end}}
     </select>
-    <input type="text" name="subcateName"/>
+    Subcategory:<input type="text" name="subcateName"/>
     <input type="submit" value="Add" />
 </div>
         <div>

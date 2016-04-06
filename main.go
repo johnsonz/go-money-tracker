@@ -5,6 +5,7 @@ import (
 	"flag"
 	"html/template"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/golang/glog"
@@ -146,11 +147,42 @@ func (subcate Subcategory) GetEntity() []Subcategory {
 	}
 	return subcates
 }
+func (subcate Subcategory) AddEntity() int64 {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Subcategory->AddEntity->open db err: %v\n", err)
+	}
+	stmt, err := db.Prepare("insert into Subcategory(CategoryID,Name,CreatedTime,CreatedBy) values(?,?,?,?)")
+	if err != nil {
+		glog.Errorf("Subcategory->AddEntity->stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(subcate.Category.ID, subcate.Name, subcate.CreatedTime, subcate.CreatedBy)
+	if err != nil {
+		glog.Errorf("Subcategory->AddEntity->exec err: %v\n", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		glog.Errorf("Subcategory->AddEntity->get LastInsertId err: %v\n", err)
+	}
+	return id
+}
 func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		var cate Category
 		cates := cate.GetEntity()
 		var subcate Subcategory
+		cateIDFromURL := r.URL.Query().Get("id")
+		cateID, err := strconv.Atoi(cateIDFromURL)
+		subcate.Category.ID = 0
+		if err != nil {
+			if len(cates) > 0 {
+				subcate.Category.ID = cates[0].ID
+			}
+			glog.Infof("Subcategory->convert id err: %v", err)
+		} else {
+			subcate.Category.ID = cateID
+		}
+
 		subcates := subcate.GetEntity()
 		data := struct {
 			Categories    []Category
@@ -161,6 +193,22 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		subcategorytemplate.Execute(w, data)
 	} else if r.Method == "POST" {
+		subcateName := r.FormValue("subcateName")
+		cateIDForm := r.FormValue("category")
+		var subcate Subcategory
+		subcate.Name = subcateName
+		cateID, err := strconv.Atoi(cateIDForm)
+		if err != nil {
+			glog.Errorf("SubcategoryHandler->convert id err: %v\n", err)
+		}
+		subcate.Category.ID = cateID
+		subcate.CreatedTime = time.Now().Format(LongFormat)
+		subcate.CreatedBy = "johnson"
 
+		lastInsertId := subcate.AddEntity()
+		if lastInsertId > -1 {
+			//insert successful
+		}
+		http.Redirect(w, r, "/subcategory?id="+cateIDForm, http.StatusMovedPermanently)
 	}
 }
