@@ -7,41 +7,27 @@
 <body>
     <form action="/category" method="post">
         <div>
-            <input type="text" />
+            <input type="text" name="cateName" />
             <input type="submit" value="Add" />
         </div>
         <div>
             <table>
                 <tr>
-                    <th>
-                        Index
-                    </th>
-                    <th>
-                        Category
-                    </th>
-                    <th>
-                        Created Time
-                    </th>
-                    <th>
-                        Created By
-                    </th>
+                    <th>Index</th>
+                    <th>Category</th>
+                    <th>Created Time</th>
+                    <th>Created By</th>
                 </tr>
+                {{range .Categorys}}
                 <tr>
-                    {{range .Categorys}}
-                    <td>
-                        {{.ID}}
-                    </td>
-                    <td>
-                        {{.Name}}
-                    </td>
-                    <td>
-                        {{.CreatedTime}}
-                    </td>
-                    <td>
-                        {{.Createdby}}
-                    </td>
-                    {{end}}
+
+                    <td>{{.ID}}</td>
+                    <td>{{.Name}}</td>
+                    <td>{{.CreatedTime}}</td>
+                    <td>{{.CreatedBy}}</td>
+
                 </tr>
+                {{end}}
             </table>
         </div>
     </form>
