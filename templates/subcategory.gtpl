@@ -7,7 +7,7 @@
 <div>
     Category:<select name="category">
         {{range .Categories}}
-        <option value="{{.ID}}">{{.Name}}</option>
+        <option value="{{.ID}}" {{if .Selected}}selected="selected"{{end}}>{{.Name}}</option>
         {{end}}
     </select>
     Subcategory:<input type="text" name="subcateName"/>

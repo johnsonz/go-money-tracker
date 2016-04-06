@@ -18,12 +18,14 @@ type Category struct {
 	Name        string
 	CreatedTime string
 	CreatedBy   string
+	Selected    bool
 }
 type Subcategory struct {
 	ID          int
 	Name        string
 	CreatedTime string
 	CreatedBy   string
+	Selected    bool
 	Category
 }
 
@@ -182,7 +184,11 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			subcate.Category.ID = cateID
 		}
-
+		for i, _ := range cates {
+			if cates[i].ID == subcate.Category.ID {
+				cates[i].Selected = true
+			}
+		}
 		subcates := subcate.GetEntity()
 		data := struct {
 			Categories    []Category
