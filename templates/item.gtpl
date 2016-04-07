@@ -1,6 +1,10 @@
 <html>
 <head>
     <title></title>
+    <link rel="stylesheet" href="/static/css/jquery-ui.min.css">
+    <script src="/static/js/jquery-1.12.3.min.js"></script>
+    <script src="/static/js/jquery-ui.min.js"></script>
+    <script src="/static/js/common.js"></script>
 </head>
 <body>
     <form action="/item" method="POST">
@@ -8,7 +12,7 @@
             <table>
                 <tr>
                     <td>PurchasedDate:</td>
-                    <td><input type="text" name="purchaseddate"/></td>
+                    <td><input type="text" name="purchaseddate" id="datepicker"/></td>
                 </tr>
                 <tr>
                     <td>Store:</td>
@@ -41,16 +45,16 @@
                     <th>Receipt</th>
                     <th>Remark</th>
                 </tr>
-                {{range .items}}
+                {{range .Items}}
                 <tr>
                     <td>{{.ID}}</td>
-                    <td>{{.Category.Name}}</td>
-                    <td>{{.Subcategory.Name}}</td>
+                <!--    <td>{{.Category.Name}}</td>
+                    <td>{{.Subcategory.Name}}</td>-->
                     <td>{{.Store}}</td>
                     <td>{{.Address}}</td>
-                    <td>PurchasedDate</td>
-                    <td>Receipt</td>
-                    <td>Remark</td>
+                    <td>{{.PurchasedDate}}</td>
+                    <td>{{.Receipt}}</td>
+                    <td>{{.Remark}}</td>
                 </tr>
                 {{end}}
             </table>

@@ -28,9 +28,21 @@ type Subcategory struct {
 	Selected    bool
 	Category
 }
+type Item struct {
+	ID            int
+	Store         string
+	Address       string
+	PurchasedDate string
+	Receipt       string
+	Remark        string
+	CreatedTime   string
+	CreatedBy     string
+	Subcategory
+}
 
 var categorytemplate *template.Template
 var subcategorytemplate *template.Template
+var itemtemplate *template.Template
 
 const (
 	dbDrive     = "sqlite3"
@@ -43,11 +55,14 @@ func init() {
 	flag.Parse()
 	categorytemplate = template.Must(template.New("category.gtpl").ParseFiles("./templates/category.gtpl"))
 	subcategorytemplate = template.Must(template.New("subcategory.gtpl").ParseFiles("./templates/subcategory.gtpl"))
+	itemtemplate = template.Must(template.New("item.gtpl").ParseFiles("./templates/item.gtpl"))
 	glog.Infoln("initial done")
 }
 func main() {
 	http.HandleFunc("/category", CategoryHandler) //设置访问的路由
 	http.HandleFunc("/subcategory", SubcategoryHandler)
+	http.HandleFunc("/item", ItemHandler)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	err := http.ListenAndServe(":8888", nil) //设置监听的端口
 	if err != nil {
 		glog.Errorf("main->ListenAndServe err: %v\n", err)
@@ -216,5 +231,67 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 			//insert successful
 		}
 		http.Redirect(w, r, "/subcategory?id="+cateIDForm, http.StatusMovedPermanently)
+	}
+}
+func (item Item) GetEntity() []Item {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Item->GetEntity->open db err: %v\n", err)
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("select ID,Store,Address,PurchasedDate,ReceiptImage,Remark,CreatedTime,CreatedBy from Item where IsDeleted=0")
+	if err != nil {
+		glog.Errorf("Item->GetEntity->stmt err: %v\n", err)
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query()
+	if err != nil {
+		glog.Errorf("Item->GetEntity->query err: %v\n", err)
+	}
+	defer rows.Close()
+	var items []Item
+	for rows.Next() {
+		var item Item
+		var receiptimage []byte
+		rows.Scan(&item.ID, &item.Store, &item.Address, &item.PurchasedDate, &receiptimage, &item.Remark, &item.CreatedTime, &item.CreatedBy)
+		item.Receipt = string(receiptimage)
+		items = append(items, item)
+	}
+	return items
+}
+func (item Item) AddEntity() int64 {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Item->AddEntity->open db err: %v\n", err)
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("insert into Item(Store,Address,PurchasedDate,ReceiptImage,Remark,CreatedTime,CreatedBy) values(?,?,?,?,?,?,?)")
+	if err != nil {
+		glog.Errorf("Item->AddEntity->stmt err: %v\n", err)
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(item.Store, item.Address, item.PurchasedDate, item.Receipt, item.Remark, item.CreatedTime, item.CreatedBy)
+	if err != nil {
+		glog.Errorf("Item->AddEntity->exec err: %v\n", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		glog.Errorf("Item->AddEntity->get LastInsertId err: %v\n", err)
+	}
+	return id
+}
+func ItemHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		var item Item
+		items := item.GetEntity()
+
+		data := struct {
+			Items []Item
+		}{
+			Items: items,
+		}
+		itemtemplate.Execute(w, data)
+	} else if r.Method == "POST" {
+
 	}
 }
