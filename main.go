@@ -3,7 +3,9 @@ package main
 import (
 	"database/sql"
 	"encoding/base64"
+	"encoding/json"
 	"flag"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -63,6 +65,7 @@ func init() {
 func main() {
 	http.HandleFunc("/category", CategoryHandler) //设置访问的路由
 	http.HandleFunc("/subcategory", SubcategoryHandler)
+	http.HandleFunc("/getsubcategory", GetSubcategoryHandler)
 	http.HandleFunc("/item", ItemHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	err := http.ListenAndServe(":8888", nil) //设置监听的端口
@@ -384,4 +387,22 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/item?id="+strconv.Itoa(int(lastInsertId))+"&sid="+strconv.Itoa(sid)+"&cid="+cateID, http.StatusMovedPermanently)
 	}
+}
+func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
+
+	var subcate Subcategory
+	cateIDForm := r.URL.Query().Get("id")
+	subcate.Category.ID = 0
+	cateID, err := strconv.Atoi(cateIDForm)
+	if err != nil {
+		glog.Infof("convert cateID %s to int err: %v", cateIDForm, err)
+	} else {
+		subcate.Category.ID = cateID
+	}
+	subcates := subcate.GetEntity()
+	data, err := json.Marshal(subcates)
+	if err != nil {
+		glog.Errorf("convert %T to json err: %v", subcates, err)
+	}
+	fmt.Fprint(w, string(data))
 }

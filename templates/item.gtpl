@@ -12,7 +12,7 @@
             <table>
                 <tr>
                     <td>Category:</td>
-                    <td><select name="category">
+                    <td><select name="category" id="category">
                         {{range .Categories}}
                             <option value="{{.ID}}" {{if .Selected}}selected="selected"{{end}}>{{.Name}}</option>
                         {{end}}
@@ -20,7 +20,7 @@
                 </tr>
                 <tr>
                     <td>Subcategory:</td>
-                    <td><select name="subcategory">
+                    <td><select name="subcategory" id="subcategory">
                         {{range .Subcategories}}
                         <option value="{{.ID}}" {{if .Selected}}selected="selected"{{end}}>{{.Name}}</option>
                         {{end}}
