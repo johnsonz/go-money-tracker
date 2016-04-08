@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"flag"
 	"html/template"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -254,7 +256,7 @@ func (item Item) GetEntity() []Item {
 		var item Item
 		var receiptimage []byte
 		rows.Scan(&item.ID, &item.Store, &item.Address, &item.PurchasedDate, &receiptimage, &item.Remark, &item.CreatedTime, &item.CreatedBy)
-		item.Receipt = string(receiptimage)
+		item.Receipt = base64.StdEncoding.EncodeToString(receiptimage)
 		items = append(items, item)
 	}
 	return items
@@ -292,6 +294,44 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		itemtemplate.Execute(w, data)
 	} else if r.Method == "POST" {
+		purchasedDate := r.FormValue("purchaseddate")
+		store := r.FormValue("store")
+		address := r.FormValue("address")
+		remark := r.FormValue("remark")
+		file, _, err := r.FormFile("receiptimage")
+		var receiptData []byte
+		switch err {
+		case nil:
+			receiptData, err = ioutil.ReadAll(file)
+			if err != nil {
+				glog.Errorf("read file err: %v\n", err)
+			}
+			// receiptData, err = base64.StdEncoding.DecodeString(string(receiptData))
+			// if err != nil {
+			// 	glog.Errorf("convert file to base64 err: %v\n", err)
+			// }
+		case http.ErrMissingFile:
+			glog.Infof("no file uploaded \n")
+		default:
+			glog.Errorf("upload file err: %v\n", err)
+		}
+		_, err = time.Parse(ShortFormat, purchasedDate)
+		if err != nil {
+			glog.Errorf("parse purchased date %s err: %v\n", purchasedDate, err)
+		}
+		var item Item
+		item.PurchasedDate = purchasedDate
+		item.Receipt = string(receiptData)
+		item.Store = store
+		item.Address = address
+		item.Remark = remark
+		item.CreatedTime = time.Now().Format(LongFormat)
+		item.CreatedBy = "johnson"
 
+		lastInsertId := item.AddEntity()
+		if lastInsertId > -1 {
+			//insert successful
+		}
+		http.Redirect(w, r, "/item", http.StatusMovedPermanently)
 	}
 }

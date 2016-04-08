@@ -7,7 +7,7 @@
     <script src="/static/js/common.js"></script>
 </head>
 <body>
-    <form action="/item" method="POST">
+    <form action="/item" method="POST" enctype="multipart/form-data">
         <div>
             <table>
                 <tr>
@@ -24,7 +24,7 @@
                 </tr>
                 <tr>
                     <td>Remark:</td>
-                    <td><input type="number" name="remark"/></td>
+                    <td><input type="text" name="remark"/></td>
                 </tr>
                 <tr>
                     <td>Receipt Image:</td>
@@ -48,12 +48,12 @@
                 {{range .Items}}
                 <tr>
                     <td>{{.ID}}</td>
-                <!--    <td>{{.Category.Name}}</td>
-                    <td>{{.Subcategory.Name}}</td>-->
+                    <td>{{.Category.Name}}</td>
+                    <td>{{.Subcategory.Name}}</td>
                     <td>{{.Store}}</td>
                     <td>{{.Address}}</td>
                     <td>{{.PurchasedDate}}</td>
-                    <td>{{.Receipt}}</td>
+                    <td><img src="data:image/jpg;base64,{{.Receipt}}"></td>
                     <td>{{.Remark}}</td>
                 </tr>
                 {{end}}
