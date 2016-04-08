@@ -241,7 +241,7 @@ func (item Item) GetEntity() []Item {
 		glog.Errorf("Item->GetEntity->open db err: %v\n", err)
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("select ID,Store,Address,PurchasedDate,ReceiptImage,Remark,CreatedTime,CreatedBy from Item where IsDeleted=0")
+	stmt, err := db.Prepare("select ID,Store,Address,PurchasedDate,ReceiptImage,Remark,CreatedTime,CreatedBy,SubcategoryID,SubcategoryName,CategoryID,CategoryName from vw_Item where IsDeleted=0")
 	if err != nil {
 		glog.Errorf("Item->GetEntity->stmt err: %v\n", err)
 	}
@@ -255,7 +255,8 @@ func (item Item) GetEntity() []Item {
 	for rows.Next() {
 		var item Item
 		var receiptimage []byte
-		rows.Scan(&item.ID, &item.Store, &item.Address, &item.PurchasedDate, &receiptimage, &item.Remark, &item.CreatedTime, &item.CreatedBy)
+		rows.Scan(&item.ID, &item.Store, &item.Address, &item.PurchasedDate, &receiptimage, &item.Remark, &item.CreatedTime, &item.CreatedBy,
+			&item.Subcategory.ID, &item.Subcategory.Name, &item.Subcategory.Category.ID, &item.Subcategory.Category.Name)
 		item.Receipt = base64.StdEncoding.EncodeToString(receiptimage)
 		items = append(items, item)
 	}
@@ -267,12 +268,12 @@ func (item Item) AddEntity() int64 {
 		glog.Errorf("Item->AddEntity->open db err: %v\n", err)
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("insert into Item(Store,Address,PurchasedDate,ReceiptImage,Remark,CreatedTime,CreatedBy) values(?,?,?,?,?,?,?)")
+	stmt, err := db.Prepare("insert into Item(Store,Address,PurchasedDate,ReceiptImage,Remark,CreatedTime,CreatedBy,SubcategoryID) values(?,?,?,?,?,?,?,?)")
 	if err != nil {
 		glog.Errorf("Item->AddEntity->stmt err: %v\n", err)
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(item.Store, item.Address, item.PurchasedDate, item.Receipt, item.Remark, item.CreatedTime, item.CreatedBy)
+	res, err := stmt.Exec(item.Store, item.Address, item.PurchasedDate, item.Receipt, item.Remark, item.CreatedTime, item.CreatedBy, item.Subcategory.ID)
 	if err != nil {
 		glog.Errorf("Item->AddEntity->exec err: %v\n", err)
 	}
@@ -290,7 +291,41 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 
 		items := item.GetEntity()
 		cates := cate.GetEntity()
+
+		// itemID := r.URL.Query().Get("id")
+		cateID := r.URL.Query().Get("cid")
+		subcateID := r.URL.Query().Get("sid")
+
+		cid, err := strconv.Atoi(cateID)
+		if err != nil {
+			cid = 0
+			if len(cates) > 0 {
+				cid = cates[0].ID
+			}
+			glog.Infof("convert cid to int err: %v\n", err)
+		}
+		subcate.Category.ID = cid
 		subcates := subcate.GetEntity()
+		sid, err := strconv.Atoi(subcateID)
+		if err != nil {
+			sid = 0
+			if len(subcates) > 0 {
+				sid = subcates[0].ID
+			}
+			glog.Infof("convert cid to int err: %v\n", err)
+		}
+		for i, _ := range cates {
+			if cates[i].ID == cid {
+				cates[i].Selected = true
+				break
+			}
+		}
+		for i, _ := range subcates {
+			if subcates[i].ID == sid {
+				subcates[i].Selected = true
+				break
+			}
+		}
 		data := struct {
 			Items         []Item
 			Categories    []Category
@@ -302,6 +337,8 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		itemtemplate.Execute(w, data)
 	} else if r.Method == "POST" {
+		cateID := r.FormValue("category")
+		subcateID := r.FormValue("subcategory")
 		purchasedDate := r.FormValue("purchaseddate")
 		store := r.FormValue("store")
 		address := r.FormValue("address")
@@ -323,11 +360,16 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		default:
 			glog.Errorf("upload file err: %v\n", err)
 		}
+		sid, err := strconv.Atoi(subcateID)
+		if err != nil {
+			glog.Errorf("convert sid to int err； %v \n", err)
+		}
 		_, err = time.Parse(ShortFormat, purchasedDate)
 		if err != nil {
 			glog.Errorf("parse purchased date %s err: %v\n", purchasedDate, err)
 		}
 		var item Item
+		item.Subcategory.ID = sid
 		item.PurchasedDate = purchasedDate
 		item.Receipt = string(receiptData)
 		item.Store = store
@@ -340,6 +382,6 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		if lastInsertId > -1 {
 			//insert successful
 		}
-		http.Redirect(w, r, "/item", http.StatusMovedPermanently)
+		http.Redirect(w, r, "/item?id="+strconv.Itoa(int(lastInsertId))+"&sid="+strconv.Itoa(sid)+"&cid="+cateID, http.StatusMovedPermanently)
 	}
 }
