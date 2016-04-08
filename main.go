@@ -427,9 +427,25 @@ func (detail Detail) GetEntity() []Detail {
 	return details
 }
 
-// func (detail Detail) AddEntity() int64 {
-//
-// }
+func (detail Detail) AddEntity() int64 {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open db err: %v\n", err)
+	}
+	stmt, err := db.Prepare("insert into Detail(ItemID,Name,Price,Quantity,LabelOne,LabelTwo,Remark,CreatedTime,CreatedBy) values(?,?,?,?,?,?,?,?)")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(detail.Item.ID, detail.Name, detail.Price, detail.Quantity, detail.LabelOne, detail.LabelTwo, detail.Remark, detail.CreatedTime, detail.CreatedBy)
+	if err != nil {
+		glog.Errorf("exec err: %v\n", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		glog.Errorf("get LastInsertId err: %v\n", err)
+	}
+	return id
+}
 func DetailHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		itemID := r.URL.Query().Get("id")
@@ -509,7 +525,8 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 		detail.LabelTwo = string(labeltwoData)
 		remark := r.FormValue("remark")
 		detail.Remark = remark
-
+		detail.CreatedTime = time.Now().Format(LongFormat)
+		detail.CreatedBy = "johnson"
 		lastInsertId := detail.AddEntity()
 		if lastInsertId > 0 {
 			//insert successful

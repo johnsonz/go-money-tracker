@@ -15,11 +15,11 @@
                 </tr>
                 <tr>
                     <td>Price:</td>
-                    <td><input type="number" name="price"/></td>
+                    <td><input type="number" step="0.01" min="0" name="price"/></td>
                 </tr>
                 <tr>
                     <td>Quantity:</td>
-                    <td><input type="number" name="quantity"/></td>
+                    <td><input type="number" min="0" name="quantity" value="1"/></td>
                 </tr>
                 <tr>
                     <td>Label One:</td>
