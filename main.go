@@ -43,10 +43,22 @@ type Item struct {
 	CreatedBy     string
 	Subcategory
 }
+type Detail struct {
+	ID          int
+	Name        string
+	Price       float64
+	Quantity    int
+	LabelOne    string
+	LabelTwo    string
+	CreatedTime string
+	CreatedBy   string
+	Item
+}
 
 var categorytemplate *template.Template
 var subcategorytemplate *template.Template
 var itemtemplate *template.Template
+var detailtemplate *template.Template
 
 const (
 	dbDrive     = "sqlite3"
@@ -60,6 +72,7 @@ func init() {
 	categorytemplate = template.Must(template.New("category.gtpl").ParseFiles("./templates/category.gtpl"))
 	subcategorytemplate = template.Must(template.New("subcategory.gtpl").ParseFiles("./templates/subcategory.gtpl"))
 	itemtemplate = template.Must(template.New("item.gtpl").ParseFiles("./templates/item.gtpl"))
+	detailtemplate = template.Must(template.New("detail.gtpl").ParseFiles("./templates/detail.gtpl"))
 	glog.Infoln("initial done")
 }
 func main() {
@@ -67,6 +80,7 @@ func main() {
 	http.HandleFunc("/subcategory", SubcategoryHandler)
 	http.HandleFunc("/getsubcategory", GetSubcategoryHandler)
 	http.HandleFunc("/item", ItemHandler)
+	http.HandleFunc("/detail", DetailHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	err := http.ListenAndServe(":8888", nil) //设置监听的端口
 	if err != nil {
@@ -386,6 +400,121 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 			//insert successful
 		}
 		http.Redirect(w, r, "/item?id="+strconv.Itoa(int(lastInsertId))+"&sid="+strconv.Itoa(sid)+"&cid="+cateID, http.StatusMovedPermanently)
+	}
+}
+func (detail Detail) GetEntity() []Detail {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open db err: %v\n", err)
+	}
+	stmt, err := db.Prepare("select ID,Price,Quantity,LabelOne,LabelTwo,CreatedTime,CreatedBy from Detail where IsDeleted=0 and ItemID=?")
+	if err != nil {
+		glog.Errorf("db prepare err: %v\n", err)
+	}
+	rows, err := stmt.Query(detail.Item.ID)
+	if err != nil {
+		glog.Errorf("exec err: %v\n", err)
+	}
+	var details []Detail
+	for rows.Next() {
+		var detail Detail
+		var labelone, labeltwo []byte
+		rows.Scan(&detail.ID, &detail.Price, &detail.Quantity, &labelone, &labeltwo, &detail.CreatedTime, &detail.CreatedBy)
+		detail.LabelOne = base64.StdEncoding.EncodeToString(labelone)
+		detail.LabelTwo = base64.StdEncoding.EncodeToString(labeltwo)
+		details = append(details, detail)
+	}
+	return details
+}
+
+// func (detail Detail) AddEntity() int64 {
+//
+// }
+func DetailHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		itemID := r.URL.Query().Get("id")
+		var detail Detail
+		iid, err := strconv.Atoi(itemID)
+		if err != nil {
+			detail.Item.ID = 0
+			glog.Errorf("get detail by item id err: %v", err)
+		} else {
+			detail.Item.ID = iid
+		}
+		details := detail.GetEntity()
+		data := struct {
+			ItemID  int
+			Details []Detail
+		}{
+			ItemID:  iid,
+			Details: details,
+		}
+		detailtemplate.Execute(w, data)
+	} else if r.Method == "POST" {
+		var detail Detail
+		itemid := r.FormValue("itemid")
+		iid, err := strconv.Atoi(itemid)
+		if err != nil {
+			glog.Fatalf("get item id %s err: %v", itemid, err)
+		}
+		detail.Item.ID = iid
+		name := r.FormValue("name")
+		detail.Name = name
+		price := r.FormValue("price")
+		pri, err := strconv.ParseFloat(price, 64)
+		if err != nil {
+			detail.Price = 0.0
+			glog.Errorf("parse float %s err: %v", price, err)
+		} else {
+			detail.Price = pri
+		}
+		quantity := r.FormValue("quantity")
+		quan, err := strconv.Atoi(quantity)
+		if err != nil {
+			detail.Quantity = 1
+			glog.Errorf("parse float %s err: %v", price, err)
+		} else {
+			detail.Quantity = quan
+		}
+		var labeloneData, labeltwoData []byte
+		labelone, _, err := r.FormFile("labelone")
+		switch err {
+		case nil:
+			labeloneData, err = ioutil.ReadAll(labelone)
+			if err != nil {
+				glog.Errorf("read file err: %v\n", err)
+			}
+		case http.ErrMissingFile:
+			glog.Infof("no file uploaded \n")
+		default:
+			glog.Errorf("upload file err: %v\n", err)
+		}
+		labeltwo, _, err := r.FormFile("labeltwo")
+		switch err {
+		case nil:
+			labeltwoData, err = ioutil.ReadAll(labeltwo)
+			if err != nil {
+				glog.Errorf("read file err: %v\n", err)
+			}
+			// receiptData, err = base64.StdEncoding.DecodeString(string(receiptData))
+			// if err != nil {
+			// 	glog.Errorf("convert file to base64 err: %v\n", err)
+			// }
+		case http.ErrMissingFile:
+			glog.Infof("no file uploaded \n")
+		default:
+			glog.Errorf("upload file err: %v\n", err)
+		}
+		detail.LabelOne = string(labeloneData)
+		detail.LabelTwo = string(labeltwoData)
+		remark := r.FormValue("remark")
+		detail.Remark = remark
+
+		lastInsertId := detail.AddEntity()
+		if lastInsertId > 0 {
+			//insert successful
+		}
+		http.Redirect(w, r, "/detail?id="+itemid, http.StatusMovedPermanently)
 	}
 }
 func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
