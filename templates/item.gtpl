@@ -1,9 +1,9 @@
 <html>
 <head>
     <title></title>
-    <link rel="stylesheet" href="/static/css/jquery-ui.min.css">
+    <link rel="stylesheet" href="/static/jquery-ui-1.11.4/jquery-ui.min.css">
     <script src="/static/js/jquery-1.12.3.min.js"></script>
-    <script src="/static/js/jquery-ui.min.js"></script>
+    <script src="/static/jquery-ui-1.11.4/jquery-ui.min.js"></script>
     <script src="/static/js/common.js"></script>
 </head>
 <body>
