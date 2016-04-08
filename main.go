@@ -285,12 +285,20 @@ func (item Item) AddEntity() int64 {
 func ItemHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		var item Item
-		items := item.GetEntity()
+		var cate Category
+		var subcate Subcategory
 
+		items := item.GetEntity()
+		cates := cate.GetEntity()
+		subcates := subcate.GetEntity()
 		data := struct {
-			Items []Item
+			Items         []Item
+			Categories    []Category
+			Subcategories []Subcategory
 		}{
-			Items: items,
+			Items:         items,
+			Categories:    cates,
+			Subcategories: subcates,
 		}
 		itemtemplate.Execute(w, data)
 	} else if r.Method == "POST" {

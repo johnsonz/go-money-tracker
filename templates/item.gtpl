@@ -11,6 +11,22 @@
         <div>
             <table>
                 <tr>
+                    <td>Category:</td>
+                    <td><select>
+                        {{range .Categories}}
+                            <option value="{{.ID}}" {{if .Selected}}selected="selected"{{end}}>{{.Name}}</option>
+                        {{end}}
+                    </select></td>
+                </tr>
+                <tr>
+                    <td>Subcategory:</td>
+                    <td><select>
+                        {{range .Subcategories}}
+                        <option value="{{.ID}}" {{if .Selected}}selected="selected"{{end}}>{{.Name}}</option>
+                        {{end}}
+                    </select></td>
+                </tr>
+                <tr>
                     <td>PurchasedDate:</td>
                     <td><input type="text" name="purchaseddate" id="datepicker"/></td>
                 </tr>
