@@ -69,7 +69,7 @@
                     <td>{{.Store}}</td>
                     <td>{{.Address}}</td>
                     <td>{{.PurchasedDate}}</td>
-                    <td><img src="data:image/jpg;base64,{{.Receipt}}"></td>
+                    <td>{{if .Receipt}}<img src="data:image/jpg;base64,{{.Receipt}}">{{else}}None{{end}}</td>
                     <td>{{.Remark}}</td>
                 </tr>
                 {{end}}

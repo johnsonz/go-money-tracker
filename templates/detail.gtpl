@@ -56,8 +56,8 @@
                     <td>{{.Price}}</td>
                     <td>{{.Quantity}}</td>
                     <td>{{getamount .Price .Quantity}}</td>
-                    <td><img src="data:image/jpg;base64,{{.LabelOne}}"></td>
-                    <td><img src="data:image/jpg;base64,{{.LabelTwo}}"></td>
+                    <td>{{if .LabelOne}}<img src="data:image/jpg;base64,{{.LabelOne}}">{{else}}None{{end}}</td>
+                    <td>{{if .LabelTwo}}<img src="data:image/jpg;base64,{{.LabelTwo}}">{{else}}None{{end}}</td>
                     <td>{{.Remark}}</td>
                 </tr>
                 {{end}}
