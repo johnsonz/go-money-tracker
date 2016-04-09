@@ -69,10 +69,15 @@ const (
 
 func init() {
 	flag.Parse()
-	categorytemplate = template.Must(template.New("category.gtpl").ParseFiles("./templates/category.gtpl"))
-	subcategorytemplate = template.Must(template.New("subcategory.gtpl").ParseFiles("./templates/subcategory.gtpl"))
-	itemtemplate = template.Must(template.New("item.gtpl").ParseFiles("./templates/item.gtpl"))
-	detailtemplate = template.Must(template.New("detail.gtpl").ParseFiles("./templates/detail.gtpl"))
+	categorytemplate = template.Must(template.New("category.gtpl").
+		ParseFiles("./templates/category.gtpl"))
+	subcategorytemplate = template.Must(template.New("subcategory.gtpl").
+		ParseFiles("./templates/subcategory.gtpl"))
+	itemtemplate = template.Must(template.New("item.gtpl").
+		ParseFiles("./templates/item.gtpl"))
+	detailtemplate = template.Must(template.New("detail.gtpl").
+		Funcs(template.FuncMap{"getamount": GetAmount}).
+		ParseFiles("./templates/detail.gtpl"))
 	glog.Infoln("initial done")
 }
 func main() {
@@ -419,7 +424,8 @@ func (detail Detail) GetEntity() []Detail {
 	for rows.Next() {
 		var detail Detail
 		var labelone, labeltwo []byte
-		rows.Scan(&detail.ID, &detail.Price, &detail.Quantity, &labelone, &labeltwo, &detail.CreatedTime, &detail.CreatedBy)
+		rows.Scan(&detail.ID, &detail.Price, &detail.Quantity, &labelone,
+			&labeltwo, &detail.CreatedTime, &detail.CreatedBy)
 		detail.LabelOne = base64.StdEncoding.EncodeToString(labelone)
 		detail.LabelTwo = base64.StdEncoding.EncodeToString(labeltwo)
 		details = append(details, detail)
@@ -432,11 +438,13 @@ func (detail Detail) AddEntity() int64 {
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
-	stmt, err := db.Prepare("insert into Detail(ItemID,Name,Price,Quantity,LabelOne,LabelTwo,Remark,CreatedTime,CreatedBy) values(?,?,?,?,?,?,?,?)")
+	stmt, err := db.Prepare("insert into Detail(ItemID,Name,Price,Quantity,LabelOne,LabelTwo,Remark,CreatedTime,CreatedBy) values(?,?,?,?,?,?,?,?,?)")
 	if err != nil {
 		glog.Errorf("stmt err: %v\n", err)
 	}
-	res, err := stmt.Exec(detail.Item.ID, detail.Name, detail.Price, detail.Quantity, detail.LabelOne, detail.LabelTwo, detail.Remark, detail.CreatedTime, detail.CreatedBy)
+	res, err := stmt.Exec(detail.Item.ID, detail.Name, detail.Price,
+		detail.Quantity, detail.LabelOne, detail.LabelTwo, detail.Remark,
+		detail.CreatedTime, detail.CreatedBy)
 	if err != nil {
 		glog.Errorf("exec err: %v\n", err)
 	}
@@ -551,4 +559,7 @@ func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		glog.Errorf("convert %T to json err: %v", subcates, err)
 	}
 	fmt.Fprint(w, string(data))
+}
+func GetAmount(price float64, quantity int) float64 {
+	return price * float64(quantity)
 }

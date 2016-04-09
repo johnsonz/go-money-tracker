@@ -55,7 +55,7 @@
                     <td>{{.Name}}</td>
                     <td>{{.Price}}</td>
                     <td>{{.Quantity}}</td>
-                    <td></td>
+                    <td>{{getamount .Price .Quantity}}</td>
                     <td><img src="data:image/jpg;base64,{{.LabelOne}}"></td>
                     <td><img src="data:image/jpg;base64,{{.LabelTwo}}"></td>
                     <td>{{.Remark}}</td>
