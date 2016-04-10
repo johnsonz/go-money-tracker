@@ -65,6 +65,7 @@ const (
 	dbName      = "data.db"
 	ShortFormat = "2006-01-02"
 	LongFormat  = "2006-01-02 15:04:05"
+	key         = "abcdefghijklmnopqrstuvwxyz012345"
 )
 
 func init() {
