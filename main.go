@@ -126,6 +126,7 @@ func (cate Category) GetEntity() []Category {
 
 //AddEntity insert data into db
 func (cate Category) AddEntity() int64 {
+	ecate := cate.Encrypt()
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
 		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
@@ -135,7 +136,7 @@ func (cate Category) AddEntity() int64 {
 	if err != nil {
 		glog.Errorf("Category->AddEntity->stmt err: %v\n", err)
 	}
-	res, err := stmt.Exec(cate.Name, cate.CreatedTime, cate.CreatedBy)
+	res, err := stmt.Exec(ecate.Name, ecate.CreatedTime, ecate.CreatedBy)
 	if err != nil {
 		glog.Errorf("Category->AddEntity->exec err: %v\n", err)
 	}
