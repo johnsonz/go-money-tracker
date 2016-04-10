@@ -21,12 +21,12 @@ func Base64Encode(b []byte) string {
 func Base64Decode(b []byte) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(string(b))
 }
-func AESEncrypt(key string, text []byte) ([]byte, error) {
+func AESEncrypt(key, text string) ([]byte, error) {
 	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
 		return nil, err
 	}
-	b := Base64Encode(text)
+	b := Base64Encode([]byte(text))
 	ciphertext := make([]byte, aes.BlockSize+len(b))
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"go-money-tracker/mtacrypto"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -21,7 +22,14 @@ type Category struct {
 	ID          int
 	Name        string
 	CreatedTime string
-	CreatedBy   string
+	CreatedBy   int
+	Selected    bool
+}
+type CategoryEncrypted struct {
+	ID          int
+	Name        []byte
+	CreatedTime []byte
+	CreatedBy   int
 	Selected    bool
 }
 type Subcategory struct {
@@ -137,6 +145,22 @@ func (cate Category) AddEntity() int64 {
 	}
 	return id
 }
+func (cate Category) Encrypt() CategoryEncrypted {
+	name, err := mtcrypto.AESEncrypt(key, cate.Name)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", cate.Name, err)
+	}
+	ctime, err := mtcrypto.AESEncrypt(key, cate.CreatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", cate.CreatedTime, err)
+	}
+	return CategoryEncrypted{
+		ID:          cate.ID,
+		Name:        name,
+		CreatedTime: ctime,
+		CreatedBy:   cate.CreatedBy,
+	}
+}
 
 //CategoryHandler handler
 func CategoryHandler(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +182,7 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 		var cate Category
 		cate.Name = cateName
 		cate.CreatedTime = time.Now().Format(LongFormat)
-		cate.CreatedBy = "johnson"
+		cate.CreatedBy = 0
 
 		lastInsertId := cate.AddEntity()
 		if lastInsertId > -1 {
