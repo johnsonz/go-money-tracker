@@ -36,9 +36,17 @@ type Subcategory struct {
 	ID          int
 	Name        string
 	CreatedTime string
-	CreatedBy   string
+	CreatedBy   int
 	Selected    bool
 	Category
+}
+type SubcategoryEncrypted struct {
+	ID          int
+	Name        []byte
+	CreatedTime []byte
+	CreatedBy   int
+	Selected    bool
+	CategoryEncrypted
 }
 type Item struct {
 	ID            int
@@ -231,6 +239,7 @@ func (subcate Subcategory) GetEntity() []Subcategory {
 	return subcates
 }
 func (subcate Subcategory) AddEntity() int64 {
+	esubcate := subcate.Encrypt()
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
 		glog.Errorf("Subcategory->AddEntity->open db err: %v\n", err)
@@ -239,7 +248,7 @@ func (subcate Subcategory) AddEntity() int64 {
 	if err != nil {
 		glog.Errorf("Subcategory->AddEntity->stmt err: %v\n", err)
 	}
-	res, err := stmt.Exec(subcate.Category.ID, subcate.Name, subcate.CreatedTime, subcate.CreatedBy)
+	res, err := stmt.Exec(esubcate.CategoryEncrypted.ID, esubcate.Name, esubcate.CreatedTime, esubcate.CreatedBy)
 	if err != nil {
 		glog.Errorf("Subcategory->AddEntity->exec err: %v\n", err)
 	}
@@ -248,6 +257,23 @@ func (subcate Subcategory) AddEntity() int64 {
 		glog.Errorf("Subcategory->AddEntity->get LastInsertId err: %v\n", err)
 	}
 	return id
+}
+func (subcate Subcategory) Encrypt() SubcategoryEncrypted {
+	name, err := mtcrypto.AESEncrypt(key, subcate.Name)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", subcate.Name, err)
+	}
+	ctime, err := mtcrypto.AESEncrypt(key, subcate.CreatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", subcate.CreatedTime, err)
+	}
+	return SubcategoryEncrypted{
+		ID:                subcate.ID,
+		Name:              name,
+		CreatedTime:       ctime,
+		CreatedBy:         subcate.CreatedBy,
+		CategoryEncrypted: subcate.Category.Encrypt(),
+	}
 }
 func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
@@ -290,7 +316,7 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		subcate.Category.ID = cateID
 		subcate.CreatedTime = time.Now().Format(LongFormat)
-		subcate.CreatedBy = "johnson"
+		subcate.CreatedBy = 0
 
 		lastInsertId := subcate.AddEntity()
 		if lastInsertId > -1 {
