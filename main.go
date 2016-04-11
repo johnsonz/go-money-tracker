@@ -56,8 +56,19 @@ type Item struct {
 	Receipt       string
 	Remark        string
 	CreatedTime   string
-	CreatedBy     string
+	CreatedBy     int
 	Subcategory
+}
+type ItemEncrypted struct {
+	ID            int
+	Store         []byte
+	Address       []byte
+	PurchasedDate []byte
+	Receipt       []byte
+	Remark        []byte
+	CreatedTime   []byte
+	CreatedBy     int
+	SubcategoryEncrypted
 }
 type Detail struct {
 	ID          int
@@ -370,6 +381,7 @@ func (item Item) GetEntity() []Item {
 	return items
 }
 func (item Item) AddEntity() int64 {
+	eitem := item.Encrypt()
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
 		glog.Errorf("Item->AddEntity->open db err: %v\n", err)
@@ -380,7 +392,7 @@ func (item Item) AddEntity() int64 {
 		glog.Errorf("Item->AddEntity->stmt err: %v\n", err)
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(item.Store, item.Address, item.PurchasedDate, item.Receipt, item.Remark, item.CreatedTime, item.CreatedBy, item.Subcategory.ID)
+	res, err := stmt.Exec(eitem.Store, eitem.Address, eitem.PurchasedDate, eitem.Receipt, eitem.Remark, eitem.CreatedTime, eitem.CreatedBy, eitem.SubcategoryEncrypted.ID)
 	if err != nil {
 		glog.Errorf("Item->AddEntity->exec err: %v\n", err)
 	}
@@ -389,6 +401,44 @@ func (item Item) AddEntity() int64 {
 		glog.Errorf("Item->AddEntity->get LastInsertId err: %v\n", err)
 	}
 	return id
+}
+func (item Item) Encrypt() ItemEncrypted {
+	store, err := mtcrypto.AESEncrypt(key, item.Store)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", item.Store, err)
+	}
+	address, err := mtcrypto.AESEncrypt(key, item.Address)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", item.Address, err)
+	}
+	purdate, err := mtcrypto.AESEncrypt(key, item.PurchasedDate)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", item.PurchasedDate, err)
+	}
+	receipt, err := mtcrypto.AESEncrypt(key, item.Receipt)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", item.Receipt, err)
+	}
+	remark, err := mtcrypto.AESEncrypt(key, item.Remark)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", item.Remark, err)
+	}
+	ctime, err := mtcrypto.AESEncrypt(key, item.CreatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", item.CreatedTime, err)
+	}
+
+	return ItemEncrypted{
+		ID:                   item.ID,
+		Store:                store,
+		Address:              address,
+		PurchasedDate:        purdate,
+		Receipt:              receipt,
+		Remark:               remark,
+		CreatedTime:          ctime,
+		CreatedBy:            item.CreatedBy,
+		SubcategoryEncrypted: item.Subcategory.Encrypt(),
+	}
 }
 func ItemHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
@@ -483,7 +533,7 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		item.Address = address
 		item.Remark = remark
 		item.CreatedTime = time.Now().Format(LongFormat)
-		item.CreatedBy = "johnson"
+		item.CreatedBy = 0
 
 		lastInsertId := item.AddEntity()
 		if lastInsertId > -1 {
