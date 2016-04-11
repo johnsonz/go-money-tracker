@@ -232,9 +232,9 @@ func (subcate Subcategory) GetEntity() []Subcategory {
 	}
 	var subcates []Subcategory
 	for rows.Next() {
-		var subcate Subcategory
-		rows.Scan(&subcate.ID, &subcate.Name, &subcate.CreatedTime, &subcate.CreatedBy)
-		subcates = append(subcates, subcate)
+		var esubcate SubcategoryEncrypted
+		rows.Scan(&esubcate.ID, &esubcate.Name, &esubcate.CreatedTime, &esubcate.CreatedBy)
+		subcates = append(subcates, esubcate.Decrypt())
 	}
 	return subcates
 }
@@ -273,6 +273,23 @@ func (subcate Subcategory) Encrypt() SubcategoryEncrypted {
 		CreatedTime:       ctime,
 		CreatedBy:         subcate.CreatedBy,
 		CategoryEncrypted: subcate.Category.Encrypt(),
+	}
+}
+func (esubcate SubcategoryEncrypted) Decrypt() Subcategory {
+	name, err := mtcrypto.AESDecrypt(key, esubcate.Name)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", esubcate.Name, err)
+	}
+	ctime, err := mtcrypto.AESDecrypt(key, esubcate.CreatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", esubcate.CreatedTime, err)
+	}
+	return Subcategory{
+		ID:          esubcate.ID,
+		Name:        string(name),
+		CreatedTime: string(ctime),
+		CreatedBy:   esubcate.CreatedBy,
+		Category:    esubcate.CategoryEncrypted.Decrypt(),
 	}
 }
 func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
