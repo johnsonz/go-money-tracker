@@ -117,9 +117,9 @@ func (cate Category) GetEntity() []Category {
 	defer rows.Close()
 	var cates []Category
 	for rows.Next() {
-		var cate Category
-		rows.Scan(&cate.ID, &cate.Name, &cate.CreatedTime, &cate.CreatedBy)
-		cates = append(cates, cate)
+		var ecate CategoryEncrypted
+		rows.Scan(&ecate.ID, &ecate.Name, &ecate.CreatedTime, &ecate.CreatedBy)
+		cates = append(cates, ecate.Decrypt())
 	}
 	return cates
 }
@@ -160,6 +160,22 @@ func (cate Category) Encrypt() CategoryEncrypted {
 		Name:        name,
 		CreatedTime: ctime,
 		CreatedBy:   cate.CreatedBy,
+	}
+}
+func (ecate CategoryEncrypted) Decrypt() Category {
+	name, err := mtcrypto.AESDecrypt(key, ecate.Name)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", ecate.Name, err)
+	}
+	ctime, err := mtcrypto.AESDecrypt(key, ecate.CreatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", ecate.CreatedTime, err)
+	}
+	return Category{
+		ID:          ecate.ID,
+		Name:        string(name),
+		CreatedTime: string(ctime),
+		CreatedBy:   ecate.CreatedBy,
 	}
 }
 
