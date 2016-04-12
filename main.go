@@ -371,12 +371,16 @@ func (item Item) GetEntity() []Item {
 	defer rows.Close()
 	var items []Item
 	for rows.Next() {
-		var item Item
-		var receiptimage []byte
-		rows.Scan(&item.ID, &item.Store, &item.Address, &item.PurchasedDate, &receiptimage, &item.Remark, &item.CreatedTime, &item.CreatedBy,
-			&item.Subcategory.ID, &item.Subcategory.Name, &item.Subcategory.Category.ID, &item.Subcategory.Category.Name)
-		item.Receipt = base64.StdEncoding.EncodeToString(receiptimage)
-		items = append(items, item)
+		var eitem ItemEncrypted
+		//var receiptimage []byte
+		rows.Scan(&eitem.ID, &eitem.Store, &eitem.Address, &eitem.PurchasedDate,
+			&eitem.Receipt, &eitem.Remark, &eitem.CreatedTime, &eitem.CreatedBy,
+			&eitem.SubcategoryEncrypted.ID, &eitem.SubcategoryEncrypted.Name,
+			&eitem.SubcategoryEncrypted.CategoryEncrypted.ID,
+			&eitem.SubcategoryEncrypted.CategoryEncrypted.Name)
+		//item.Receipt = base64.StdEncoding.EncodeToString(receiptimage)
+		eitem.Receipt = []byte(mtcrypto.Base64Encode(eitem.Receipt))
+		items = append(items, eitem.Decrypt())
 	}
 	return items
 }
@@ -438,6 +442,44 @@ func (item Item) Encrypt() ItemEncrypted {
 		CreatedTime:          ctime,
 		CreatedBy:            item.CreatedBy,
 		SubcategoryEncrypted: item.Subcategory.Encrypt(),
+	}
+}
+func (eitem ItemEncrypted) Decrypt() Item {
+	store, err := mtcrypto.AESDecrypt(key, eitem.Store)
+	if err != nil {
+		glog.Errorf("decrypt name %s err: %v", eitem.Store, err)
+	}
+	address, err := mtcrypto.AESDecrypt(key, eitem.Address)
+	if err != nil {
+		glog.Errorf("decrypt name %s err: %v", eitem.Address, err)
+	}
+	purdate, err := mtcrypto.AESDecrypt(key, eitem.PurchasedDate)
+	if err != nil {
+		glog.Errorf("decrypt name %s err: %v", eitem.PurchasedDate, err)
+	}
+	receipt, err := mtcrypto.AESDecrypt(key, eitem.Receipt)
+	if err != nil {
+		glog.Errorf("decrypt name %s err: %v", eitem.Receipt, err)
+	}
+	remark, err := mtcrypto.AESDecrypt(key, eitem.Remark)
+	if err != nil {
+		glog.Errorf("decrypt name %s err: %v", eitem.Remark, err)
+	}
+	ctime, err := mtcrypto.AESDecrypt(key, eitem.CreatedTime)
+	if err != nil {
+		glog.Errorf("decrypt name %s err: %v", eitem.CreatedTime, err)
+	}
+
+	return Item{
+		ID:            eitem.ID,
+		Store:         string(store),
+		Address:       string(address),
+		PurchasedDate: string(purdate),
+		Receipt:       string(receipt),
+		Remark:        string(remark),
+		CreatedTime:   string(ctime),
+		CreatedBy:     eitem.CreatedBy,
+		Subcategory:   eitem.SubcategoryEncrypted.Decrypt(),
 	}
 }
 func ItemHandler(w http.ResponseWriter, r *http.Request) {
