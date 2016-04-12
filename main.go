@@ -78,8 +78,19 @@ type Detail struct {
 	LabelOne    string
 	LabelTwo    string
 	CreatedTime string
-	CreatedBy   string
+	CreatedBy   int
 	Item
+}
+type DetailEncrypted struct {
+	ID          int
+	Name        []byte
+	Price       []byte
+	Quantity    []byte
+	LabelOne    []byte
+	LabelTwo    []byte
+	CreatedTime []byte
+	CreatedBy   int
+	ItemEncrypted
 }
 
 var categorytemplate *template.Template
@@ -613,6 +624,10 @@ func (detail Detail) GetEntity() []Detail {
 }
 
 func (detail Detail) AddEntity() int64 {
+	fmt.Println(detail)
+
+	edetail := detail.Encrypt()
+	fmt.Println(edetail)
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
@@ -621,9 +636,9 @@ func (detail Detail) AddEntity() int64 {
 	if err != nil {
 		glog.Errorf("stmt err: %v\n", err)
 	}
-	res, err := stmt.Exec(detail.Item.ID, detail.Name, detail.Price,
-		detail.Quantity, detail.LabelOne, detail.LabelTwo, detail.Remark,
-		detail.CreatedTime, detail.CreatedBy)
+	res, err := stmt.Exec(edetail.ItemEncrypted.ID, edetail.Name, edetail.Price,
+		edetail.Quantity, edetail.LabelOne, edetail.LabelTwo, edetail.Remark,
+		edetail.CreatedTime, edetail.CreatedBy)
 	if err != nil {
 		glog.Errorf("exec err: %v\n", err)
 	}
@@ -632,6 +647,43 @@ func (detail Detail) AddEntity() int64 {
 		glog.Errorf("get LastInsertId err: %v\n", err)
 	}
 	return id
+}
+func (detail Detail) Encrypt() DetailEncrypted {
+	name, err := mtcrypto.AESEncrypt(key, detail.Name)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", detail.Name, err)
+	}
+	price, err := mtcrypto.AESEncrypt(key, strconv.FormatFloat(detail.Price, 'f', -1, 64))
+	if err != nil {
+		glog.Errorf("enctypt name %v err: %v", detail.Price, err)
+	}
+	quantity, err := mtcrypto.AESEncrypt(key, string(detail.Quantity))
+	if err != nil {
+		glog.Errorf("enctypt name %d err: %v", detail.Quantity, err)
+	}
+	labelone, err := mtcrypto.AESEncrypt(key, detail.LabelOne)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", detail.LabelOne, err)
+	}
+	labeltwo, err := mtcrypto.AESEncrypt(key, detail.LabelTwo)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", detail.LabelTwo, err)
+	}
+	ctime, err := mtcrypto.AESEncrypt(key, detail.CreatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", detail.CreatedTime, err)
+	}
+	return DetailEncrypted{
+		ID:            detail.ID,
+		Name:          name,
+		Price:         price,
+		Quantity:      quantity,
+		LabelOne:      labelone,
+		LabelTwo:      labeltwo,
+		CreatedTime:   ctime,
+		CreatedBy:     detail.CreatedBy,
+		ItemEncrypted: detail.Item.Encrypt(),
+	}
 }
 func DetailHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
@@ -713,7 +765,7 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 		remark := r.FormValue("remark")
 		detail.Remark = remark
 		detail.CreatedTime = time.Now().Format(LongFormat)
-		detail.CreatedBy = "johnson"
+		detail.CreatedBy = 0
 		lastInsertId := detail.AddEntity()
 		if lastInsertId > 0 {
 			//insert successful
