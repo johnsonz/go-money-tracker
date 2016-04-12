@@ -379,8 +379,10 @@ func (item Item) GetEntity() []Item {
 			&eitem.SubcategoryEncrypted.CategoryEncrypted.ID,
 			&eitem.SubcategoryEncrypted.CategoryEncrypted.Name)
 		//item.Receipt = base64.StdEncoding.EncodeToString(receiptimage)
-		eitem.Receipt = []byte(mtcrypto.Base64Encode(eitem.Receipt))
-		items = append(items, eitem.Decrypt())
+		//eitem.Receipt = []byte(mtcrypto.Base64Encode(eitem.Receipt))
+		item := eitem.Decrypt()
+		item.Receipt = mtcrypto.Base64Encode([]byte(item.Receipt))
+		items = append(items, item)
 	}
 	return items
 }
