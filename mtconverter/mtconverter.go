@@ -1,27 +1,16 @@
 package mtconverter
 
-import (
-	"bytes"
-	"encoding/binary"
-	"math"
-	"strconv"
-)
+import "strconv"
 
-func Bytes2Float64(b []byte) float64 {
-	bits := binary.LittleEndian.Uint64(b)
-	float := math.Float64frombits(bits)
-	return float
+func Bytes2Float64(b []byte) (float64, error) {
+	return strconv.ParseFloat(string(b), 64)
 }
-
-func Float642Bytes(float float64) []byte {
-	bits := math.Float64bits(float)
-	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b, bits)
-	return b
+func Float642String(f float64) string {
+	return strconv.FormatFloat(f, 'f', -1, 64)
 }
-func Int2Bytes(i int) []byte {
-	return []byte(strconv.Itoa(i))
+func Int642String(i int64) string {
+	return strconv.FormatInt(i, 10)
 }
-func Bytes2Int(b []byte) (int, error) {
-	return strconv.Atoi(string(b[:bytes.Index(b, []byte{0})]))
+func Bytes2Int(b []byte) (int64, error) {
+	return strconv.ParseInt(string(b), 10, 64)
 }
