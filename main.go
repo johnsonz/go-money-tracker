@@ -2,11 +2,11 @@ package main
 
 import (
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"go-money-tracker/mtacrypto"
+	"go-money-tracker/mtconverter"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -74,7 +74,7 @@ type Detail struct {
 	ID          int
 	Name        string
 	Price       float64
-	Quantity    int
+	Quantity    int64
 	LabelOne    string
 	LabelTwo    string
 	CreatedTime string
@@ -108,6 +108,7 @@ const (
 
 func init() {
 	flag.Parse()
+
 	categorytemplate = template.Must(template.New("category.gtpl").
 		ParseFiles("./templates/category.gtpl"))
 	subcategorytemplate = template.Must(template.New("subcategory.gtpl").
@@ -612,22 +613,20 @@ func (detail Detail) GetEntity() []Detail {
 	}
 	var details []Detail
 	for rows.Next() {
-		var detail Detail
-		var labelone, labeltwo []byte
-		rows.Scan(&detail.ID, &detail.Price, &detail.Quantity, &labelone,
-			&labeltwo, &detail.CreatedTime, &detail.CreatedBy)
-		detail.LabelOne = base64.StdEncoding.EncodeToString(labelone)
-		detail.LabelTwo = base64.StdEncoding.EncodeToString(labeltwo)
+		var edetail DetailEncrypted
+		rows.Scan(&edetail.ID, &edetail.Price, &edetail.Quantity, &edetail.LabelOne,
+			&edetail.LabelTwo, &edetail.CreatedTime, &edetail.CreatedBy)
+		detail := edetail.Decrypt()
+		detail.LabelOne = mtcrypto.Base64Encode([]byte(detail.LabelOne))
+		detail.LabelTwo = mtcrypto.Base64Encode([]byte(detail.LabelTwo))
+
 		details = append(details, detail)
 	}
 	return details
 }
 
 func (detail Detail) AddEntity() int64 {
-	fmt.Println(detail)
-
 	edetail := detail.Encrypt()
-	fmt.Println(edetail)
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
@@ -653,11 +652,11 @@ func (detail Detail) Encrypt() DetailEncrypted {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", detail.Name, err)
 	}
-	price, err := mtcrypto.AESEncrypt(key, strconv.FormatFloat(detail.Price, 'f', -1, 64))
+	price, err := mtcrypto.AESEncrypt(key, mtconverter.Float642String(detail.Price))
 	if err != nil {
 		glog.Errorf("enctypt name %v err: %v", detail.Price, err)
 	}
-	quantity, err := mtcrypto.AESEncrypt(key, string(detail.Quantity))
+	quantity, err := mtcrypto.AESEncrypt(key, mtconverter.Int642String(detail.Quantity))
 	if err != nil {
 		glog.Errorf("enctypt name %d err: %v", detail.Quantity, err)
 	}
@@ -683,6 +682,52 @@ func (detail Detail) Encrypt() DetailEncrypted {
 		CreatedTime:   ctime,
 		CreatedBy:     detail.CreatedBy,
 		ItemEncrypted: detail.Item.Encrypt(),
+	}
+}
+func (edetail DetailEncrypted) Decrypt() Detail {
+	name, err := mtcrypto.AESDecrypt(key, edetail.Name)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", edetail.Name, err)
+	}
+	pri, err := mtcrypto.AESDecrypt(key, edetail.Price)
+	if err != nil {
+		glog.Errorf("enctypt name %v err: %v", edetail.Price, err)
+	}
+	price, err := mtconverter.Bytes2Float64(pri)
+	if err != nil {
+		glog.Errorf("enctypt name %v err: %v", edetail.Price, err)
+	}
+	quan, err := mtcrypto.AESDecrypt(key, edetail.Quantity)
+	if err != nil {
+		glog.Errorf("enctypt name %d err: %v", edetail.Quantity, err)
+	}
+	quantity, err := mtconverter.Bytes2Int(quan)
+	if err != nil {
+		glog.Errorf("enctypt name %d err: %v", edetail.Quantity, err)
+	}
+	fmt.Println("quantity=", quantity)
+	labelone, err := mtcrypto.AESDecrypt(key, edetail.LabelOne)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", edetail.LabelOne, err)
+	}
+	labeltwo, err := mtcrypto.AESDecrypt(key, edetail.LabelTwo)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", edetail.LabelTwo, err)
+	}
+	ctime, err := mtcrypto.AESDecrypt(key, edetail.CreatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", edetail.CreatedTime, err)
+	}
+	return Detail{
+		ID:          edetail.ID,
+		Name:        string(name),
+		Price:       price,
+		Quantity:    quantity,
+		LabelOne:    string(labelone),
+		LabelTwo:    string(labeltwo),
+		CreatedTime: string(ctime),
+		CreatedBy:   edetail.CreatedBy,
+		Item:        edetail.ItemEncrypted.Decrypt(),
 	}
 }
 func DetailHandler(w http.ResponseWriter, r *http.Request) {
@@ -724,7 +769,7 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 			detail.Price = pri
 		}
 		quantity := r.FormValue("quantity")
-		quan, err := strconv.Atoi(quantity)
+		quan, err := strconv.ParseInt(quantity, 10, 64)
 		if err != nil {
 			detail.Quantity = 1
 			glog.Errorf("parse float %s err: %v", price, err)
@@ -791,6 +836,6 @@ func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprint(w, string(data))
 }
-func GetAmount(price float64, quantity int) float64 {
+func GetAmount(price float64, quantity int64) float64 {
 	return price * float64(quantity)
 }
