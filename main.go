@@ -128,7 +128,6 @@ const (
 
 func init() {
 	flag.Parse()
-
 	categorytemplate = template.Must(template.New("category.gtpl").
 		ParseFiles("./templates/category.gtpl"))
 	subcategorytemplate = template.Must(template.New("subcategory.gtpl").
@@ -176,6 +175,53 @@ func (user User) GetEntity() []User {
 	}
 	return users
 }
+func (user User) AddEntity() int64 {
+	euser := user.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open db err: %v\n", err)
+	}
+	stmt, err := db.Prepare("insert into User(Username, Password, Hostname, CreatedTime, CreatedBy) values(?,?,?,?,?)")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(euser.Username, euser.Password, euser.Hostname, euser.CreatedTime, euser.CreatedBy)
+	if err != nil {
+		glog.Errorf("query err: %v\n", err)
+	}
+	lastInsertId, err := res.LastInsertId()
+	if err != nil {
+		glog.Errorf("query err: %v\n", err)
+	}
+
+	return lastInsertId
+}
+func (user User) Encrypt() UserEncrypted {
+	username, err := mtcrypto.AESEncrypt(key, user.Username)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", user.Username, err)
+	}
+	password, err := mtcrypto.AESEncrypt(key, user.Password)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", user.Password, err)
+	}
+	hostname, err := mtcrypto.AESEncrypt(key, user.Hostname)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", user.Hostname, err)
+	}
+	ctime, err := mtcrypto.AESEncrypt(key, user.CreatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", user.CreatedTime, err)
+	}
+	return UserEncrypted{
+		ID:          user.ID,
+		Username:    username,
+		Password:    password,
+		Hostname:    hostname,
+		CreatedTime: ctime,
+		CreatedBy:   user.CreatedBy,
+	}
+}
 func (euser UserEncrypted) Decrypt() User {
 	username, err := mtcrypto.AESDecrypt(key, euser.Username)
 	if err != nil {
@@ -189,11 +235,17 @@ func (euser UserEncrypted) Decrypt() User {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", euser.Hostname, err)
 	}
+	ctime, err := mtcrypto.AESDecrypt(key, euser.CreatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", euser.CreatedTime, err)
+	}
 	return User{
-		ID:       euser.ID,
-		Username: string(username),
-		Password: string(password),
-		Hostname: string(hostname),
+		ID:          euser.ID,
+		Username:    string(username),
+		Password:    string(password),
+		Hostname:    string(hostname),
+		CreatedTime: string(ctime),
+		CreatedBy:   euser.CreatedBy,
 	}
 }
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
