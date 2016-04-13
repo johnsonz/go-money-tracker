@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -92,11 +93,30 @@ type DetailEncrypted struct {
 	CreatedBy   int
 	ItemEncrypted
 }
+type User struct {
+	ID          int
+	Username    string
+	Password    string
+	LastLoginIP string
+	Hostname    string
+	CreatedTime string
+	CreatedBy   int
+}
+type UserEncrypted struct {
+	ID          int
+	Username    []byte
+	Password    []byte
+	LastLoginIP []byte
+	Hostname    []byte
+	CreatedTime []byte
+	CreatedBy   int
+}
 
 var categorytemplate *template.Template
 var subcategorytemplate *template.Template
 var itemtemplate *template.Template
 var detailtemplate *template.Template
+var logintemplate *template.Template
 
 const (
 	dbDrive     = "sqlite3"
@@ -118,9 +138,12 @@ func init() {
 	detailtemplate = template.Must(template.New("detail.gtpl").
 		Funcs(template.FuncMap{"getamount": GetAmount}).
 		ParseFiles("./templates/detail.gtpl"))
+	logintemplate = template.Must(template.New("login.gtpl").
+		ParseFiles("./templates/login.gtpl"))
 	glog.Infoln("initial done")
 }
 func main() {
+	http.HandleFunc("/login", LoginHandler)
 	http.HandleFunc("/category", CategoryHandler) //设置访问的路由
 	http.HandleFunc("/subcategory", SubcategoryHandler)
 	http.HandleFunc("/getsubcategory", GetSubcategoryHandler)
@@ -130,6 +153,87 @@ func main() {
 	err := http.ListenAndServe(":8888", nil) //设置监听的端口
 	if err != nil {
 		glog.Errorf("main->ListenAndServe err: %v\n", err)
+	}
+}
+func (user User) GetEntity() []User {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open db err: %v\n", err)
+	}
+	stmt, err := db.Prepare("select ID, Username, Password, Hostname from User where IsDeleted=0")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	rows, err := stmt.Query()
+	if err != nil {
+		glog.Errorf("query err: %v\n", err)
+	}
+	var users []User
+	for rows.Next() {
+		var euser UserEncrypted
+		rows.Scan(&euser.ID, &euser.Username, &euser.Password, &euser.Hostname)
+		users = append(users, euser.Decrypt())
+	}
+	return users
+}
+func (euser UserEncrypted) Decrypt() User {
+	username, err := mtcrypto.AESDecrypt(key, euser.Username)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", euser.Username, err)
+	}
+	password, err := mtcrypto.AESDecrypt(key, euser.Password)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", euser.Password, err)
+	}
+	hostname, err := mtcrypto.AESDecrypt(key, euser.Hostname)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", euser.Hostname, err)
+	}
+	return User{
+		ID:       euser.ID,
+		Username: string(username),
+		Password: string(password),
+		Hostname: string(hostname),
+	}
+}
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		data := struct {
+			Username  string
+			ShowError string
+		}{
+			Username:  "",
+			ShowError: "none",
+		}
+		logintemplate.Execute(w, data)
+	} else {
+		username := r.FormValue("username")
+		password := r.FormValue("password")
+		hostname, err := os.Hostname()
+		if err != nil {
+			glog.Errorf("get hostname err: %v", err)
+		}
+		var user User
+		users := user.GetEntity()
+		usernamemd5 := mtcrypto.MD5(username)
+		passwordmd5 := mtcrypto.MD5(password)
+		hostnamemd5 := mtcrypto.MD5(hostname)
+
+		for _, u := range users {
+			if u.Username == string(usernamemd5[:]) &&
+				u.Password == string(passwordmd5[:]) &&
+				u.Hostname == string(hostnamemd5[:]) {
+				http.Redirect(w, r, "/category", http.StatusMovedPermanently)
+			}
+		}
+		data := struct {
+			Username  string
+			ShowError string
+		}{
+			Username:  username,
+			ShowError: "block",
+		}
+		logintemplate.Execute(w, data)
 	}
 }
 
