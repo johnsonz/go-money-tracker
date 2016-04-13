@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/gorilla/context"
+	"github.com/gorilla/sessions"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -117,6 +119,7 @@ var subcategorytemplate *template.Template
 var itemtemplate *template.Template
 var detailtemplate *template.Template
 var logintemplate *template.Template
+var store *sessions.CookieStore
 
 const (
 	dbDrive     = "sqlite3"
@@ -124,6 +127,8 @@ const (
 	ShortFormat = "2006-01-02"
 	LongFormat  = "2006-01-02 15:04:05"
 	key         = "abcdefghijklmnopqrstuvwxyz012345"
+	sessionsKey = "johnson"
+	sessionName = "mt"
 )
 
 func init() {
@@ -139,9 +144,11 @@ func init() {
 		ParseFiles("./templates/detail.gtpl"))
 	logintemplate = template.Must(template.New("login.gtpl").
 		ParseFiles("./templates/login.gtpl"))
+	store = sessions.NewCookieStore([]byte(sessionsKey))
 	glog.Infoln("initial done")
 }
 func main() {
+	http.HandleFunc("/", LoginHandler)
 	http.HandleFunc("/login", LoginHandler)
 	http.HandleFunc("/category", CategoryHandler) //设置访问的路由
 	http.HandleFunc("/subcategory", SubcategoryHandler)
@@ -149,9 +156,21 @@ func main() {
 	http.HandleFunc("/item", ItemHandler)
 	http.HandleFunc("/detail", DetailHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	err := http.ListenAndServe(":8888", nil) //设置监听的端口
+	err := http.ListenAndServe(":8888", context.ClearHandler(http.DefaultServeMux)) //设置监听的端口
 	if err != nil {
 		glog.Errorf("main->ListenAndServe err: %v\n", err)
+	}
+}
+func CheckSessions(w http.ResponseWriter, r *http.Request) {
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		glog.Errorf("get session err: %v", err)
+	}
+	if flashes := session.Flashes(); len(flashes) > 0 {
+		// Use the flash values.
+		glog.Infof("get session flashes: %v", flashes)
+	} else {
+		http.Redirect(w, r, "/login", http.StatusMovedPermanently)
 	}
 }
 func (user User) GetEntity() []User {
@@ -267,14 +286,32 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		var user User
 		users := user.GetEntity()
-		usernamemd5 := mtcrypto.MD5(username)
-		passwordmd5 := mtcrypto.MD5(password)
-		hostnamemd5 := mtcrypto.MD5(hostname)
+		usernamemd5 := fmt.Sprintf("%X", mtcrypto.MD5(username))
+		passwordmd5 := fmt.Sprintf("%X", mtcrypto.MD5(password))
+		hostnamemd5 := fmt.Sprintf("%X", mtcrypto.MD5(hostname))
 
 		for _, u := range users {
-			if u.Username == string(usernamemd5[:]) &&
-				u.Password == string(passwordmd5[:]) &&
-				u.Hostname == string(hostnamemd5[:]) {
+			if u.Username == usernamemd5 &&
+				u.Password == passwordmd5 &&
+				u.Hostname == hostnamemd5 {
+
+				session, err := store.Get(r, sessionName)
+				if err != nil {
+					glog.Errorf("get session err: %v", err)
+				}
+				session.Options = &sessions.Options{
+					Path:     "/",
+					MaxAge:   86400,
+					HttpOnly: true,
+				}
+				if flashes := session.Flashes(); len(flashes) > 0 {
+					// Use the flash values.
+					glog.Infof("get session flashes: %v", flashes)
+				} else {
+					// Set a new flash.
+					session.AddFlash(usernamemd5)
+				}
+				session.Save(r, w)
 				http.Redirect(w, r, "/category", http.StatusMovedPermanently)
 			}
 		}
@@ -368,7 +405,13 @@ func (ecate CategoryEncrypted) Decrypt() Category {
 
 //CategoryHandler handler
 func CategoryHandler(w http.ResponseWriter, r *http.Request) {
-
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		glog.Errorf("get session err: %v", err)
+	}
+	username := session.Values["username"]
+	fmt.Println("ua=", session)
+	fmt.Println("ua=", username)
 	if r.Method == "GET" {
 		var cate Category
 		cates := cate.GetEntity()
