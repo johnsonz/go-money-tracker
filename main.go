@@ -325,8 +325,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		logintemplate.Execute(w, data)
 	}
 }
-
-//GetEntity get data from db
 func (cate Category) GetEntity() []Category {
 	db, err := sql.Open(dbDrive, "./data.db")
 
@@ -347,8 +345,6 @@ func (cate Category) GetEntity() []Category {
 	}
 	return cates
 }
-
-//AddEntity insert data into db
 func (cate Category) AddEntity() int64 {
 	ecate := cate.Encrypt()
 	db, err := sql.Open(dbDrive, "./data.db")
@@ -402,16 +398,8 @@ func (ecate CategoryEncrypted) Decrypt() Category {
 		CreatedBy:   ecate.CreatedBy,
 	}
 }
-
-//CategoryHandler handler
 func CategoryHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		glog.Errorf("get session err: %v", err)
-	}
-	username := session.Values["username"]
-	fmt.Println("ua=", session)
-	fmt.Println("ua=", username)
+	CheckSessions(w, r)
 	if r.Method == "GET" {
 		var cate Category
 		cates := cate.GetEntity()
@@ -515,6 +503,7 @@ func (esubcate SubcategoryEncrypted) Decrypt() Subcategory {
 	}
 }
 func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
+	CheckSessions(w, r)
 	if r.Method == "GET" {
 		var cate Category
 		cates := cate.GetEntity()
@@ -696,6 +685,7 @@ func (eitem ItemEncrypted) Decrypt() Item {
 	}
 }
 func ItemHandler(w http.ResponseWriter, r *http.Request) {
+	CheckSessions(w, r)
 	if r.Method == "GET" {
 		var item Item
 		var cate Category
@@ -930,6 +920,7 @@ func (edetail DetailEncrypted) Decrypt() Detail {
 	}
 }
 func DetailHandler(w http.ResponseWriter, r *http.Request) {
+	CheckSessions(w, r)
 	if r.Method == "GET" {
 		itemID := r.URL.Query().Get("id")
 		var detail Detail
@@ -1018,7 +1009,7 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
-
+	CheckSessions(w, r)
 	var subcate Subcategory
 	cateIDForm := r.URL.Query().Get("id")
 	subcate.Category.ID = 0
