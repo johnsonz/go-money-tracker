@@ -5,3 +5,12 @@
     width: 30%;
     margin: 0 auto;
 }
+.wrap-table{
+    width: 60%;
+    padding-left: 10px;
+}
+.wrap-primary{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 10px;
+}
