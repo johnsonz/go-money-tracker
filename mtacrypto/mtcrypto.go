@@ -41,8 +41,11 @@ func AESDecrypt(key string, text []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(text) == 0 {
+		return nil, nil
+	}
 	if len(text) < aes.BlockSize {
-		return nil, errors.New("ciphertext too short")
+		return nil, errors.New("ciphertext too short" + " ,len=" + string(len(text)) + ",blocksize=" + string(aes.BlockSize))
 	}
 	iv := text[:aes.BlockSize]
 	text = text[aes.BlockSize:]

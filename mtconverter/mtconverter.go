@@ -3,6 +3,9 @@ package mtconverter
 import "strconv"
 
 func Bytes2Float64(b []byte) (float64, error) {
+	if len(b) == 0 {
+		return 0, nil
+	}
 	return strconv.ParseFloat(string(b), 64)
 }
 func Float642String(f float64) string {

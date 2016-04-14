@@ -58,6 +58,7 @@
                     <th>Store</th>
                     <th>Address</th>
                     <th>PurchasedDate</th>
+                    <th>Amount</th>
                     <th>Receipt</th>
                     <th>Remark</th>
                 </tr>
@@ -69,6 +70,7 @@
                     <td>{{.Store}}</td>
                     <td>{{.Address}}</td>
                     <td>{{.PurchasedDate}}</td>
+                    <td>{{.Amount}}</td>
                     <td>{{if .Receipt}}<img src="data:image/jpg;base64,{{.Receipt}}">{{else}}None{{end}}</td>
                     <td>{{.Remark}}</td>
                 </tr>

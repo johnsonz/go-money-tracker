@@ -57,6 +57,7 @@ type Item struct {
 	Address       string
 	PurchasedDate string
 	Receipt       string
+	Amount        float64
 	Remark        string
 	CreatedTime   string
 	CreatedBy     int
@@ -68,6 +69,7 @@ type ItemEncrypted struct {
 	Address       []byte
 	PurchasedDate []byte
 	Receipt       []byte
+	Amount        []byte
 	Remark        []byte
 	CreatedTime   []byte
 	CreatedBy     int
@@ -559,7 +561,7 @@ func (item Item) GetEntity() []Item {
 		glog.Errorf("Item->GetEntity->open db err: %v\n", err)
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("select ID,Store,Address,PurchasedDate,ReceiptImage,Remark,CreatedTime,CreatedBy,SubcategoryID,SubcategoryName,CategoryID,CategoryName from vw_Item where IsDeleted=0")
+	stmt, err := db.Prepare("select ID,Store,Address,PurchasedDate,Amount,ReceiptImage,Remark,CreatedTime,CreatedBy,SubcategoryID,SubcategoryName,CategoryID,CategoryName from vw_Item where IsDeleted=0")
 	if err != nil {
 		glog.Errorf("Item->GetEntity->stmt err: %v\n", err)
 	}
@@ -573,7 +575,7 @@ func (item Item) GetEntity() []Item {
 	for rows.Next() {
 		var eitem ItemEncrypted
 		//var receiptimage []byte
-		rows.Scan(&eitem.ID, &eitem.Store, &eitem.Address, &eitem.PurchasedDate,
+		rows.Scan(&eitem.ID, &eitem.Store, &eitem.Address, &eitem.PurchasedDate, &eitem.Amount,
 			&eitem.Receipt, &eitem.Remark, &eitem.CreatedTime, &eitem.CreatedBy,
 			&eitem.SubcategoryEncrypted.ID, &eitem.SubcategoryEncrypted.Name,
 			&eitem.SubcategoryEncrypted.CategoryEncrypted.ID,
@@ -625,6 +627,10 @@ func (item Item) Encrypt() ItemEncrypted {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", item.Receipt, err)
 	}
+	amount, err := mtcrypto.AESEncrypt(key, mtconverter.Float642String(item.Amount))
+	if err != nil {
+		glog.Errorf("enctypt name %v err: %v", item.Amount, err)
+	}
 	remark, err := mtcrypto.AESEncrypt(key, item.Remark)
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", item.Remark, err)
@@ -640,6 +646,7 @@ func (item Item) Encrypt() ItemEncrypted {
 		Address:              address,
 		PurchasedDate:        purdate,
 		Receipt:              receipt,
+		Amount:               amount,
 		Remark:               remark,
 		CreatedTime:          ctime,
 		CreatedBy:            item.CreatedBy,
@@ -659,6 +666,14 @@ func (eitem ItemEncrypted) Decrypt() Item {
 	if err != nil {
 		glog.Errorf("decrypt name %s err: %v", eitem.PurchasedDate, err)
 	}
+	amt, err := mtcrypto.AESDecrypt(key, eitem.Amount)
+	if err != nil {
+		glog.Errorf("decrypt name %s err: %v", eitem.Amount, err)
+	}
+	amount, err := mtconverter.Bytes2Float64(amt)
+	if err != nil {
+		glog.Errorf("decrypt name %s err: %v", eitem.Amount, err)
+	}
 	receipt, err := mtcrypto.AESDecrypt(key, eitem.Receipt)
 	if err != nil {
 		glog.Errorf("decrypt name %s err: %v", eitem.Receipt, err)
@@ -677,6 +692,7 @@ func (eitem ItemEncrypted) Decrypt() Item {
 		Store:         string(store),
 		Address:       string(address),
 		PurchasedDate: string(purdate),
+		Amount:        amount,
 		Receipt:       string(receipt),
 		Remark:        string(remark),
 		CreatedTime:   string(ctime),
@@ -813,14 +829,19 @@ func (detail Detail) GetEntity() []Detail {
 	}
 	return details
 }
-
 func (detail Detail) AddEntity() int64 {
 	edetail := detail.Encrypt()
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
-	stmt, err := db.Prepare("insert into Detail(ItemID,Name,Price,Quantity,LabelOne,LabelTwo,Remark,CreatedTime,CreatedBy) values(?,?,?,?,?,?,?,?,?)")
+	////transaction begin
+	tx, err := db.Begin()
+	if err != nil {
+		glog.Errorf("tx begin err: %v\n", err)
+	}
+	//insert detail
+	stmt, err := tx.Prepare("insert into Detail(ItemID,Name,Price,Quantity,LabelOne,LabelTwo,Remark,CreatedTime,CreatedBy) values(?,?,?,?,?,?,?,?,?)")
 	if err != nil {
 		glog.Errorf("stmt err: %v\n", err)
 	}
@@ -833,6 +854,35 @@ func (detail Detail) AddEntity() int64 {
 	id, err := res.LastInsertId()
 	if err != nil {
 		glog.Errorf("get LastInsertId err: %v\n", err)
+	}
+	//retrive amount from item
+	var eitem ItemEncrypted
+	eitem.ID = detail.Item.ID
+	stmt, err = tx.Prepare("select Amount from Item where ID=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	err = stmt.QueryRow(detail.Item.ID).Scan(&eitem.Amount)
+	if err != nil {
+		glog.Errorf("get item amount err: %v\n", err)
+	}
+	item := eitem.Decrypt()
+	//update amount
+	item.Amount = item.Amount + GetAmount(detail.Price, detail.Quantity)
+	stmt, err = tx.Prepare("update Item set Amount=? where ID=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	res, err = stmt.Exec(item.Encrypt().Amount, detail.Item.ID)
+	if err != nil {
+		glog.Errorf("exec err: %v\n", err)
+	}
+	//transaction commit
+	err = tx.Commit()
+	if err != nil {
+		id = -1
+		glog.Errorf("tx commit err: %v\n", err)
+		tx.Rollback()
 	}
 	return id
 }
@@ -894,7 +944,6 @@ func (edetail DetailEncrypted) Decrypt() Detail {
 	if err != nil {
 		glog.Errorf("enctypt name %d err: %v", edetail.Quantity, err)
 	}
-	fmt.Println("quantity=", quantity)
 	labelone, err := mtcrypto.AESDecrypt(key, edetail.LabelOne)
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", edetail.LabelOne, err)
