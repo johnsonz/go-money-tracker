@@ -1,56 +1,78 @@
 <html>
+
 <head>
     <title></title>
     <link rel="stylesheet" href="/static/jquery-ui-1.11.4/jquery-ui.min.css">
-    <script src="/static/js/jquery-1.12.3.min.js"></script>
-    <script src="/static/jquery-ui-1.11.4/jquery-ui.min.js"></script>
-    <script src="/static/js/common.js"></script>
+    <link rel="stylesheet" href="static/bootstrap-3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="static/bootstrap-3.3.6/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="static/css/style.css">
+
 </head>
+
 <body>
     <form action="/item" method="POST" enctype="multipart/form-data">
-        <div>
-            <table>
+        <div class="wrap-field">
+            <table class="table table-condensed">
                 <tr>
                     <td>Category:</td>
-                    <td><select name="category" id="category">
-                        {{range .Categories}}
-                            <option value="{{.ID}}" {{if .Selected}}selected="selected"{{end}}>{{.Name}}</option>
-                        {{end}}
-                    </select></td>
+                    <td>
+                        <select name="category" id="category">
+                            {{range .Categories}}
+                            <option value="{{.ID}}" {{if .Selected}}selected="selected" {{end}}>{{.Name}}</option>
+                            {{end}}
+                        </select>
+                    </td>
                 </tr>
                 <tr>
                     <td>Subcategory:</td>
-                    <td><select name="subcategory" id="subcategory">
-                        {{range .Subcategories}}
-                        <option value="{{.ID}}" {{if .Selected}}selected="selected"{{end}}>{{.Name}}</option>
-                        {{end}}
-                    </select></td>
+                    <td>
+                        <select name="subcategory" id="subcategory">
+                            {{range .Subcategories}}
+                            <option value="{{.ID}}" {{if .Selected}}selected="selected" {{end}}>{{.Name}}</option>
+                            {{end}}
+                        </select>
+                    </td>
                 </tr>
                 <tr>
                     <td>PurchasedDate:</td>
-                    <td><input type="text" name="purchaseddate" id="datepicker"/></td>
+                    <td>
+                        <input type="text" name="purchaseddate" id="datepicker" />
+                    </td>
                 </tr>
                 <tr>
                     <td>Store:</td>
-                    <td><input type="text" name="store"/></td>
+                    <td>
+                        <input type="text" name="store" />
+                    </td>
                 </tr>
                 <tr>
                     <td>Address:</td>
-                    <td><input type="text" name="address"/></td>
+                    <td>
+                        <input type="text" name="address" />
+                    </td>
                 </tr>
                 <tr>
                     <td>Remark:</td>
-                    <td><input type="text" name="remark"/></td>
+                    <td>
+                        <input type="text" name="remark" />
+                    </td>
                 </tr>
                 <tr>
                     <td>Receipt Image:</td>
-                    <td><input  type="file" name="receiptimage"/></td>
+                    <td>
+                        <input type="file" name="receiptimage" />
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <input type="submit" value="Add" class="btn btn-primary" />
+                    </td>
                 </tr>
             </table>
-            <input type="submit" value="Add"/>
+
         </div>
-        <div>
-            <table>
+        <div class="wrap-table">
+            <table class="table table-striped table-bordered table-hover table-condensed">
                 <tr>
                     <th>Index</th>
                     <th>Category</th>
@@ -78,5 +100,10 @@
             </table>
         </div>
     </form>
+    <script src="/static/js/jquery-1.12.3.min.js"></script>
+    <script src="/static/jquery-ui-1.11.4/jquery-ui.min.js"></script>
+    <script src="static/bootstrap-3.3.6/js/bootstrap.min.js"></script>
+    <script src="/static/js/common.js"></script>
 </body>
+
 </html>
