@@ -272,11 +272,11 @@ func (euser UserEncrypted) Decrypt() User {
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		data := struct {
-			Username  string
-			ShowError string
+			Username string
+			HasError string
 		}{
-			Username:  "",
-			ShowError: "none",
+			Username: "",
+			HasError: "",
 		}
 		logintemplate.Execute(w, data)
 	} else {
@@ -318,11 +318,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		data := struct {
-			Username  string
-			ShowError string
+			Username string
+			HasError string
 		}{
-			Username:  username,
-			ShowError: "block",
+			Username: username,
+			HasError: "has-error",
 		}
 		logintemplate.Execute(w, data)
 	}
