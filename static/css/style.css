@@ -6,7 +6,7 @@
     margin: 0 auto;
 }
 .wrap-table {
-    width: 60%;
+    width: 70%;
     padding-left: 10px;
 }
 .wrap-primary {
@@ -15,7 +15,7 @@
     padding-left: 10px;
 }
 .wrap-field{
-    width: 30%;
+    width: 35%;
     padding-left: 10px;
 }
 .wrap-field table>tbody>tr>td{
