@@ -136,7 +136,7 @@ const (
 func init() {
 	flag.Parse()
 	categorytemplate = template.Must(template.New("category.gtpl").
-		ParseFiles("./templates/category.gtpl"))
+		ParseFiles("./templates/category.gtpl", "./templates/main.gtpl"))
 	subcategorytemplate = template.Must(template.New("subcategory.gtpl").
 		ParseFiles("./templates/subcategory.gtpl"))
 	itemtemplate = template.Must(template.New("item.gtpl").
