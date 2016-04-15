@@ -76,8 +76,8 @@
                     <td>{{.Price}}</td>
                     <td>{{.Quantity}}</td>
                     <td>{{getamount .Price .Quantity}}</td>
-                    <td>{{if .LabelOne}}<img src="data:image/jpg;base64,{{.LabelOne}}">{{else}}None{{end}}</td>
-                    <td>{{if .LabelTwo}}<img src="data:image/jpg;base64,{{.LabelTwo}}">{{else}}None{{end}}</td>
+                    <td>{{if .LabelOne}}<img class="smallimg" src="data:image/jpg;base64,{{.LabelOne}}">{{else}}None{{end}}</td>
+                    <td>{{if .LabelTwo}}<img class="smallimg" src="data:image/jpg;base64,{{.LabelTwo}}">{{else}}None{{end}}</td>
                     <td>{{.Remark}}</td>
                 </tr>
                 {{end}}
@@ -86,7 +86,8 @@
     </form>
     <script src="/static/js/jquery-1.12.3.min.js"></script>
     <script src="/static/jquery-ui-1.11.4/jquery-ui.min.js"></script>
-    <script src="static/bootstrap-3.3.6/js/bootstrap.min.js"></script>
+    <script src="/static/bootstrap-3.3.6/js/bootstrap.min.js"></script>
+
     <script src="/static/js/common.js"></script>
 </body>
 

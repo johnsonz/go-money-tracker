@@ -15,4 +15,20 @@ $(function() {
             $("#subcategory").html(options);
         });
     });
+    $(".smallimg").click(function(e) {
+        $("body").find("#bigimg").remove();
+        $("body").append('<p id="bigimg"><img src="' + this.src + '" alt="" /></p>');
+        $(this).stop().fadeTo('slow', 0.5);
+        $("#bigimg").fadeIn('fast');
+        var w = document.documentElement.clientWidth;
+        var h = document.documentElement.clientHeight;
+        $("#bigimg").css({
+            top: (h - $("#bigimg").height()) / 2,
+            left: (w - $("#bigimg").width()) / 2
+        });
+        $("#bigimg").click(function(){
+            $("body").find("#bigimg").remove();
+        });
+    });
+
 });
