@@ -82,6 +82,7 @@ type Detail struct {
 	Quantity    int64
 	LabelOne    string
 	LabelTwo    string
+	Remark      string
 	CreatedTime string
 	CreatedBy   int
 	Item
@@ -93,6 +94,7 @@ type DetailEncrypted struct {
 	Quantity    []byte
 	LabelOne    []byte
 	LabelTwo    []byte
+	Remark      []byte
 	CreatedTime []byte
 	CreatedBy   int
 	ItemEncrypted
@@ -812,7 +814,7 @@ func (detail Detail) GetEntity() []Detail {
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
-	stmt, err := db.Prepare("select ID,Price,Quantity,LabelOne,LabelTwo,CreatedTime,CreatedBy from Detail where IsDeleted=0 and ItemID=?")
+	stmt, err := db.Prepare("select ID,Name,Price,Quantity,LabelOne,LabelTwo,Remark,CreatedTime,CreatedBy from Detail where IsDeleted=0 and ItemID=?")
 	if err != nil {
 		glog.Errorf("db prepare err: %v\n", err)
 	}
@@ -823,8 +825,9 @@ func (detail Detail) GetEntity() []Detail {
 	var details []Detail
 	for rows.Next() {
 		var edetail DetailEncrypted
-		rows.Scan(&edetail.ID, &edetail.Price, &edetail.Quantity, &edetail.LabelOne,
-			&edetail.LabelTwo, &edetail.CreatedTime, &edetail.CreatedBy)
+		rows.Scan(&edetail.ID, &edetail.Name, &edetail.Price, &edetail.Quantity,
+			&edetail.LabelOne, &edetail.LabelTwo, &edetail.Remark,
+			&edetail.CreatedTime, &edetail.CreatedBy)
 		detail := edetail.Decrypt()
 		detail.LabelOne = mtcrypto.Base64Encode([]byte(detail.LabelOne))
 		detail.LabelTwo = mtcrypto.Base64Encode([]byte(detail.LabelTwo))
@@ -867,8 +870,13 @@ func (detail Detail) AddEntity() int64 {
 		glog.Errorf("stmt err: %v\n", err)
 	}
 	err = stmt.QueryRow(detail.Item.ID).Scan(&eitem.Amount)
-	if err != nil {
+	switch {
+	case err == sql.ErrNoRows:
+		glog.Infof("no row err: %v\n", err)
+	case err != nil:
 		glog.Errorf("get item amount err: %v\n", err)
+	default:
+		//
 	}
 	item := eitem.Decrypt()
 	//update amount
@@ -915,6 +923,10 @@ func (detail Detail) Encrypt() DetailEncrypted {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", detail.CreatedTime, err)
 	}
+	remark, err := mtcrypto.AESEncrypt(key, detail.Remark)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", detail.Remark, err)
+	}
 	return DetailEncrypted{
 		ID:            detail.ID,
 		Name:          name,
@@ -922,6 +934,7 @@ func (detail Detail) Encrypt() DetailEncrypted {
 		Quantity:      quantity,
 		LabelOne:      labelone,
 		LabelTwo:      labeltwo,
+		Remark:        remark,
 		CreatedTime:   ctime,
 		CreatedBy:     detail.CreatedBy,
 		ItemEncrypted: detail.Item.Encrypt(),
@@ -960,6 +973,10 @@ func (edetail DetailEncrypted) Decrypt() Detail {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", edetail.CreatedTime, err)
 	}
+	remark, err := mtcrypto.AESDecrypt(key, edetail.Remark)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", edetail.Remark, err)
+	}
 	return Detail{
 		ID:          edetail.ID,
 		Name:        string(name),
@@ -969,6 +986,7 @@ func (edetail DetailEncrypted) Decrypt() Detail {
 		LabelTwo:    string(labeltwo),
 		CreatedTime: string(ctime),
 		CreatedBy:   edetail.CreatedBy,
+		Remark:      string(remark),
 		Item:        edetail.ItemEncrypted.Decrypt(),
 	}
 }
