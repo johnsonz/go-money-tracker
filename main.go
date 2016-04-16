@@ -138,7 +138,7 @@ func init() {
 	categorytemplate = template.Must(template.New("category.gtpl").
 		ParseFiles("./templates/category.gtpl", "./templates/main.gtpl"))
 	subcategorytemplate = template.Must(template.New("subcategory.gtpl").
-		ParseFiles("./templates/subcategory.gtpl"))
+		ParseFiles("./templates/subcategory.gtpl", "./templates/main.gtpl"))
 	itemtemplate = template.Must(template.New("item.gtpl").
 		ParseFiles("./templates/item.gtpl"))
 	detailtemplate = template.Must(template.New("detail.gtpl").
@@ -528,9 +528,11 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		subcates := subcate.GetEntity()
 		data := struct {
+			Title         string
 			Categories    []Category
 			Subcategories []Subcategory
 		}{
+			Title:         "Subcategory",
 			Categories:    cates,
 			Subcategories: subcates,
 		}
