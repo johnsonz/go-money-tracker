@@ -22,11 +22,19 @@ $(function() {
         $("#bigimg").fadeIn('fast');
         var w = document.documentElement.clientWidth;
         var h = document.documentElement.clientHeight;
+        var top = (h - $("#bigimg").height()) / 2;
+        var left = (w - $("#bigimg").width()) / 2;
+        if (top < 0) {
+            top = 0;
+        }
+        if (left < 0) {
+            left = 0;
+        }
         $("#bigimg").css({
-            top: (h - $("#bigimg").height()) / 2,
-            left: (w - $("#bigimg").width()) / 2
+            top: top,
+            left: left
         });
-        $("#bigimg").click(function(){
+        $("#bigimg").click(function() {
             $("body").find("#bigimg").remove();
         });
     });
