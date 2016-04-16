@@ -143,7 +143,7 @@ func init() {
 		ParseFiles("./templates/item.gtpl", "./templates/main.gtpl"))
 	detailtemplate = template.Must(template.New("detail.gtpl").
 		Funcs(template.FuncMap{"getamount": GetAmount}).
-		ParseFiles("./templates/detail.gtpl"))
+		ParseFiles("./templates/detail.gtpl", "./templates/main.gtpl"))
 	logintemplate = template.Must(template.New("login.gtpl").
 		ParseFiles("./templates/login.gtpl"))
 	store = sessions.NewCookieStore([]byte(sessionsKey))
@@ -986,9 +986,11 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		details := detail.GetEntity()
 		data := struct {
+			Title   string
 			ItemID  int
 			Details []Detail
 		}{
+			Title:   "Detail",
 			ItemID:  iid,
 			Details: details,
 		}
