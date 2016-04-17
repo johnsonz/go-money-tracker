@@ -117,6 +117,13 @@ type UserEncrypted struct {
 	CreatedTime []byte
 	CreatedBy   int
 }
+type Pagination struct {
+	TotalPage   int
+	TotalRecord int
+	CurrentPage int
+	PrevPage    int
+	NextPage    int
+}
 
 var categorytemplate *template.Template
 var subcategorytemplate *template.Template
@@ -133,6 +140,7 @@ const (
 	key         = "abcdefghijklmnopqrstuvwxyz012345"
 	sessionsKey = "johnson"
 	sessionName = "mt"
+	pageSize    = 20
 )
 
 func init() {
