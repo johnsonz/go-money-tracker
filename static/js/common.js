@@ -38,5 +38,18 @@ $(function() {
             $("body").find("#bigimg").remove();
         });
     });
-
+    $("#navbar ul li").click(function() {
+        Cookies.set("active", $(this).attr("name"));
+    });
+    setActiveNav();
 });
+
+function setActiveNav() {
+    var active = Cookies.get("active");
+    $(".active").removeClass("active");
+    if (active == "" || active == undefined) {
+        $("li[name='cate']").addClass("active");
+    } else {
+        $("li[name='" + active + "']").addClass("active");
+    }
+}

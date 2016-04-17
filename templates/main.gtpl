@@ -20,10 +20,10 @@
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-        <li class="active"><a href="/category">Category</a></li>
-        <li><a href="/subcategory">Subcategory</a></li>
-        <li><a href="/item">Item</a></li>
-        <li><a href="/detail">Detail</a></li>
+        <li name="cate"><a href="/category">Category</a></li>
+        <li name="subcate"><a href="/subcategory">Subcategory</a></li>
+        <li name="item"><a href="/item">Item</a></li>
+        <li name="detail"><a href="/detail">Detail</a></li>
       </ul>
     </div><!--/.nav-collapse -->
   </div>
@@ -31,6 +31,7 @@
 {{end}}
 {{define "footer"}}
 <script src="/static/js/jquery-1.12.3.min.js"></script>
+<script src="/static/js/js.cookie-2.1.1.min.js"></script>
 <script src="/static/jquery-ui-1.11.4/jquery-ui.min.js"></script>
 <script src="/static/bootstrap-3.3.6/js/bootstrap.min.js"></script>
 <script src="/static/js/common.js"></script>
