@@ -1,4 +1,5 @@
 {{template "header" .}}
+{{template "nav" .}}
 <form action="subcategory" method="POST">
     <div class="wrap-primary">
         <label class="control-label">Category</label>

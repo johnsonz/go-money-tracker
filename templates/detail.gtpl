@@ -1,4 +1,5 @@
 {{template "header" .}}
+{{template "nav" .}}
     <form action="/detail" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="itemid" value="{{.ItemID}}" readonly="readonly" />
         <div class="wrap-field">

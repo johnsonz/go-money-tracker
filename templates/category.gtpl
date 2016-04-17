@@ -1,5 +1,5 @@
 {{template "header" .}}
-
+{{template "nav" .}}
 <form action="/category" method="post">
     <div class="wrap-primary">
         <label for="inputCateName" class="control-label">Category</label>

@@ -1,4 +1,5 @@
 {{template "header" .}}
+{{template "nav" .}}
     <form action="/item" method="POST" enctype="multipart/form-data">
         <div class="wrap-field">
             <table class="table table-condensed">
