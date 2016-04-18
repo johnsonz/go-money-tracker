@@ -118,11 +118,10 @@ type UserEncrypted struct {
 	CreatedBy   int
 }
 type Pagination struct {
-	TotalPage   int
-	TotalRecord int
-	CurrentPage int
-	PrevPage    int
-	NextPage    int
+	Count    int
+	Index    int
+	Previous int
+	Next     int
 }
 
 var categorytemplate *template.Template
@@ -141,6 +140,7 @@ const (
 	sessionsKey = "johnson"
 	sessionName = "mt"
 	pageSize    = 20
+	pageNavSize = 5
 )
 
 func init() {
@@ -337,14 +337,18 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		logintemplate.Execute(w, data)
 	}
 }
-func (cate Category) GetEntity() []Category {
+func (cate Category) GetEntity(pagination Pagination) []Category {
 	db, err := sql.Open(dbDrive, "./data.db")
 
 	if err != nil {
 		glog.Errorf("Category->GetEntity->open sqlite err: %v\n", err)
 	}
 	defer db.Close()
-	rows, err := db.Query("SELECT ID, Name,CreatedTime, CreatedBy FROM Category where IsDeleted=0")
+	stmt, err := db.Prepare("SELECT ID, Name,CreatedTime, CreatedBy FROM Category where IsDeleted=0 limit ? offset ?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	rows, err := stmt.Query(pageSize, pageSize*(pagination.Index-1))
 	if err != nil {
 		glog.Errorf("Category->GetEntity->query err: %v\n", err)
 	}
@@ -410,18 +414,43 @@ func (ecate CategoryEncrypted) Decrypt() Category {
 		CreatedBy:   ecate.CreatedBy,
 	}
 }
+func (cate Category) Count() (count int) {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open sqlite err: %v\n", err)
+	}
+	db.QueryRow("select count(*) from Category where IsDeleted=0", nil).Scan(&count)
+	return count
+}
 func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	if r.Method == "GET" {
+		page := r.URL.Query().Get("page")
+		pageIndex, err := strconv.Atoi(page)
+		if err != nil {
+			pageIndex = 1
+			glog.Infof("get page index err: %v", err)
+		}
 		var cate Category
-		cates := cate.GetEntity()
+		var pagination Pagination
+		pagination.Index = pageIndex
+		cates := cate.GetEntity(pagination)
+		if len(cates)%2 == 0 {
+			pagination.Count = len(cates) / 2
+		} else {
+			pagination.Count = len(cates)/2 + 1
+		}
+		pagination.Previous = pageIndex - 1
+		pagination.Next = pageIndex + 1
 
 		data := struct {
 			Title      string
 			Categories []Category
+			Pagination string
 		}{
 			Title:      "Category",
 			Categories: cates,
+			Pagination: "",
 		}
 		categorytemplate.Execute(w, data)
 	} else if r.Method == "POST" {
@@ -518,7 +547,7 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	if r.Method == "GET" {
 		var cate Category
-		cates := cate.GetEntity()
+		cates := cate.GetEntity(Pagination{Index: -1})
 		var subcate Subcategory
 		cateIDFromURL := r.URL.Query().Get("id")
 		cateID, err := strconv.Atoi(cateIDFromURL)
@@ -720,7 +749,7 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		var subcate Subcategory
 
 		items := item.GetEntity()
-		cates := cate.GetEntity()
+		cates := cate.GetEntity(Pagination{Index: -1})
 
 		// itemID := r.URL.Query().Get("id")
 		cateID := r.URL.Query().Get("cid")
@@ -1109,4 +1138,31 @@ func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 }
 func GetAmount(price float64, quantity int64) float64 {
 	return price * float64(quantity)
+}
+func GetPaginationHtml(pagination Pagination) string {
+	nav:=`	<nav>
+				<ul class="pagination">
+					<li>
+						<a href="`++`" aria-label="Previous">
+							<span aria-hidden="true">&laquo;</span>
+					    </a>
+					</li>`
+
+for i:=0;i<pageNavSize;i++{
+
+	}
+
+<li><a href="#">1</a></li>
+<li><a href="#">2</a></li>
+<li><a href="#">3</a></li>
+<li><a href="#">4</a></li>
+<li><a href="#">5</a></li>
+<li>
+  <a href="#" aria-label="Next">
+	<span aria-hidden="true">&raquo;</span>
+  </a>
+</li>
+</ul>
+</nav>
+
 }
