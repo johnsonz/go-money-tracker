@@ -46,7 +46,7 @@ $(function() {
 
 function setActiveNav() {
     var active = Cookies.get("active");
-    $(".active").removeClass("active");
+    $("#navbar .active").removeClass("active");
     if (active == "" || active == undefined) {
         $("li[name='cate']").addClass("active");
     } else {

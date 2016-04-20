@@ -139,13 +139,14 @@ const (
 	key         = "abcdefghijklmnopqrstuvwxyz012345"
 	sessionsKey = "johnson"
 	sessionName = "mt"
-	pageSize    = 20
+	pageSize    = 2
 	pageNavSize = 5
 )
 
 func init() {
 	flag.Parse()
 	categorytemplate = template.Must(template.New("category.gtpl").
+		Funcs(template.FuncMap{"plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
 		ParseFiles("./templates/category.gtpl", "./templates/main.gtpl"))
 	subcategorytemplate = template.Must(template.New("subcategory.gtpl").
 		ParseFiles("./templates/subcategory.gtpl", "./templates/main.gtpl"))
@@ -435,22 +436,22 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 		var pagination Pagination
 		pagination.Index = pageIndex
 		cates := cate.GetEntity(pagination)
-		if len(cates)%2 == 0 {
-			pagination.Count = len(cates) / 2
+		count := cate.Count()
+		if count%2 == 0 {
+			pagination.Count = count / 2
 		} else {
-			pagination.Count = len(cates)/2 + 1
+			pagination.Count = count/2 + 1
 		}
 		pagination.Previous = pageIndex - 1
 		pagination.Next = pageIndex + 1
-
 		data := struct {
 			Title      string
 			Categories []Category
-			Pagination string
+			Pagination Pagination
 		}{
 			Title:      "Category",
 			Categories: cates,
-			Pagination: "",
+			Pagination: pagination,
 		}
 		categorytemplate.Execute(w, data)
 	} else if r.Method == "POST" {
@@ -1139,30 +1140,9 @@ func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 func GetAmount(price float64, quantity int64) float64 {
 	return price * float64(quantity)
 }
-func GetPaginationHtml(pagination Pagination) string {
-	nav:=`	<nav>
-				<ul class="pagination">
-					<li>
-						<a href="`++`" aria-label="Previous">
-							<span aria-hidden="true">&laquo;</span>
-					    </a>
-					</li>`
-
-for i:=0;i<pageNavSize;i++{
-
-	}
-
-<li><a href="#">1</a></li>
-<li><a href="#">2</a></li>
-<li><a href="#">3</a></li>
-<li><a href="#">4</a></li>
-<li><a href="#">5</a></li>
-<li>
-  <a href="#" aria-label="Next">
-	<span aria-hidden="true">&raquo;</span>
-  </a>
-</li>
-</ul>
-</nav>
-
+func Plus(m, n int) int {
+	return m + n
+}
+func Minus(m, n int) int {
+	return m - n
 }
