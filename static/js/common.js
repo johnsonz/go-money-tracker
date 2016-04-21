@@ -47,8 +47,6 @@ $(function() {
         var name=ep.find("span[name='catename']").html();
         var time=ep.find("span[name='catectime']").html();
         var by=ep.find("span[name='catecby']").html();
-            // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
-            // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
         var modal = $(this)
         modal.find('.modal-body #catename').val(name);
         modal.find('.modal-body #createdtime').val(time);

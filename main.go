@@ -10,7 +10,6 @@ import (
 	"html/template"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -296,21 +295,22 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		username := r.FormValue("username")
 		password := r.FormValue("password")
-		hostname, err := os.Hostname()
-		if err != nil {
-			glog.Errorf("get hostname err: %v", err)
-		}
+		// hostname, err := os.Hostname()
+		// if err != nil {
+		// 	glog.Errorf("get hostname err: %v", err)
+		// }
 		var user User
 		users := user.GetEntity()
 		usernamemd5 := fmt.Sprintf("%X", mtcrypto.MD5(username))
 		passwordmd5 := fmt.Sprintf("%X", mtcrypto.MD5(password))
-		hostnamemd5 := fmt.Sprintf("%X", mtcrypto.MD5(hostname))
+		// hostnamemd5 := fmt.Sprintf("%X", mtcrypto.MD5(hostname))
 
 		for _, u := range users {
+			// if u.Username == usernamemd5 &&
+			// 	u.Password == passwordmd5 &&
+			// 	u.Hostname == hostnamemd5 {
 			if u.Username == usernamemd5 &&
-				u.Password == passwordmd5 &&
-				u.Hostname == hostnamemd5 {
-
+				u.Password == passwordmd5 {
 				session, err := store.Get(r, sessionName)
 				if err != nil {
 					glog.Errorf("get session err: %v", err)
@@ -392,7 +392,7 @@ func (cate Category) DelEntity() int64 {
 		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("delete from Category where id=?")
+	stmt, err := db.Prepare("update Category set IsDeleted=1 where id=?")
 	if err != nil {
 		glog.Errorf("Category->AddEntity->stmt err: %v\n", err)
 	}
@@ -481,57 +481,14 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 		pagination.Previous = pageIndex - 1
 		pagination.Next = pageIndex + 1
 
-		// 	nav := `<nav>
-		// 			<ul class="pagination">`
-		// 	if pagination.Previous < 1 {
-		// 		nav += `<li class="disabled">
-		// 			<a href="#" aria-label="Previous">
-		// 				<span aria-hidden="true">&laquo;</span>
-		// 			</a>
-		// 		</li>`
-		// 	} else {
-		// 		nav += `<li>
-		// 			<a href="/category?page={{.Pagination.Previous}}" aria-label="Previous">
-		// 				<span aria-hidden="true">&laquo;</span>
-		// 			</a>
-		// 		</li>`
-		// 	}
-		// 	if pagination.Index > 2 {
-		// 		nav += `<li><a href="/category?page=` + strconv.Itoa(pagination.Index-2) + `">` + strconv.Itoa(pagination.Index-2) + `</a></li>`
-		// 	}
-		// 	if pagination.Index > 1 {
-		// 		nav += `<li><a href="/category?page=` + strconv.Itoa(pagination.Index-1) + `">` + strconv.Itoa(pagination.Index-1) + `</a></li>`
-		// 	}
-		// 	nav += `<li class="active"><a href="/category?page=` + strconv.Itoa(pagination.Index) + `">` + strconv.Itoa(pagination.Index) + `</a></li>`
-		// 	if pagination.Index < pagination.Count {
-		// 		nav += `<li><a href="/category?page=` + strconv.Itoa(pagination.Index+1) + `">` + strconv.Itoa(pagination.Index+1) + `</a></li>`
-		// 	}
-		// 	if pagination.Index+1 < pagination.Count {
-		// 		nav += `<li><a href="/category?page=` + strconv.Itoa(pagination.Index+2) + `">` + strconv.Itoa(pagination.Index+2) + `</a></li>`
-		// 	}
-		// 	if pagination.Next == pagination.Count {
-		// 		nav += `<li>
-		// 	<a href="/category?page={{.Pagination.Next}}" aria-label="Next">
-		// 		<span aria-hidden="true">&raquo;</span>
-		// 	</a>
-		// </li>`
-		// 	} else {
-		// 		nav += `<li class="disabled">
-		// 	<a href="#" aria-label="Next">
-		// 		<span aria-hidden="true">&raquo;</span>
-		// 	</a>
-		// </li>`
-		// 	}
 		data := struct {
 			Title      string
 			Categories []Category
 			Pagination Pagination
-			// Pagination  template.HTML
 		}{
 			Title:      "Category",
 			Categories: cates,
 			Pagination: pagination,
-			// Pagination:  template.HTML(nav),
 		}
 		categorytemplate.Execute(w, data)
 	} else if r.Method == "POST" {
