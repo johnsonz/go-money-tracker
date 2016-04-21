@@ -141,6 +141,9 @@ const (
 	sessionName = "mt"
 	pageSize    = 2
 	pageNavSize = 5
+	delAction   = "del"
+	updAction   = "upd"
+	addAction   = "add"
 )
 
 func init() {
@@ -383,6 +386,26 @@ func (cate Category) AddEntity() int64 {
 	}
 	return id
 }
+func (cate Category) DelEntity() int64 {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("delete from Category where id=?")
+	if err != nil {
+		glog.Errorf("Category->AddEntity->stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(cate.ID)
+	if err != nil {
+		glog.Errorf("Category->AddEntity->exec err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("Category->AddEntity->get lastinsertid err: %v\n", err)
+	}
+	return rowsAffected
+}
 func (cate Category) Encrypt() CategoryEncrypted {
 	name, err := mtcrypto.AESEncrypt(key, cate.Name)
 	if err != nil {
@@ -426,13 +449,26 @@ func (cate Category) Count() (count int) {
 func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	if r.Method == "GET" {
+		var cate Category
+		if r.URL.Query().Get("action") == delAction {
+			cid := r.URL.Query().Get("id")
+			id, err := strconv.Atoi(cid)
+			if err != nil {
+				glog.Errorf("convert string %s to int err: %v", cid, err)
+			}
+			cate.ID = id
+			rowsAffected := cate.DelEntity()
+			if rowsAffected > 0 {
+				//successful
+			}
+		}
 		page := r.URL.Query().Get("page")
 		pageIndex, err := strconv.Atoi(page)
 		if err != nil {
 			pageIndex = 1
 			glog.Infof("get page index err: %v", err)
 		}
-		var cate Category
+
 		var pagination Pagination
 		pagination.Index = pageIndex
 		cates := cate.GetEntity(pagination)
@@ -444,14 +480,58 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		pagination.Previous = pageIndex - 1
 		pagination.Next = pageIndex + 1
+
+		// 	nav := `<nav>
+		// 			<ul class="pagination">`
+		// 	if pagination.Previous < 1 {
+		// 		nav += `<li class="disabled">
+		// 			<a href="#" aria-label="Previous">
+		// 				<span aria-hidden="true">&laquo;</span>
+		// 			</a>
+		// 		</li>`
+		// 	} else {
+		// 		nav += `<li>
+		// 			<a href="/category?page={{.Pagination.Previous}}" aria-label="Previous">
+		// 				<span aria-hidden="true">&laquo;</span>
+		// 			</a>
+		// 		</li>`
+		// 	}
+		// 	if pagination.Index > 2 {
+		// 		nav += `<li><a href="/category?page=` + strconv.Itoa(pagination.Index-2) + `">` + strconv.Itoa(pagination.Index-2) + `</a></li>`
+		// 	}
+		// 	if pagination.Index > 1 {
+		// 		nav += `<li><a href="/category?page=` + strconv.Itoa(pagination.Index-1) + `">` + strconv.Itoa(pagination.Index-1) + `</a></li>`
+		// 	}
+		// 	nav += `<li class="active"><a href="/category?page=` + strconv.Itoa(pagination.Index) + `">` + strconv.Itoa(pagination.Index) + `</a></li>`
+		// 	if pagination.Index < pagination.Count {
+		// 		nav += `<li><a href="/category?page=` + strconv.Itoa(pagination.Index+1) + `">` + strconv.Itoa(pagination.Index+1) + `</a></li>`
+		// 	}
+		// 	if pagination.Index+1 < pagination.Count {
+		// 		nav += `<li><a href="/category?page=` + strconv.Itoa(pagination.Index+2) + `">` + strconv.Itoa(pagination.Index+2) + `</a></li>`
+		// 	}
+		// 	if pagination.Next == pagination.Count {
+		// 		nav += `<li>
+		// 	<a href="/category?page={{.Pagination.Next}}" aria-label="Next">
+		// 		<span aria-hidden="true">&raquo;</span>
+		// 	</a>
+		// </li>`
+		// 	} else {
+		// 		nav += `<li class="disabled">
+		// 	<a href="#" aria-label="Next">
+		// 		<span aria-hidden="true">&raquo;</span>
+		// 	</a>
+		// </li>`
+		// 	}
 		data := struct {
 			Title      string
 			Categories []Category
 			Pagination Pagination
+			// Pagination  template.HTML
 		}{
 			Title:      "Category",
 			Categories: cates,
 			Pagination: pagination,
+			// Pagination:  template.HTML(nav),
 		}
 		categorytemplate.Execute(w, data)
 	} else if r.Method == "POST" {
