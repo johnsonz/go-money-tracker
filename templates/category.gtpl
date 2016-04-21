@@ -50,13 +50,7 @@
                     <li><a href="/category?page={{plus .Pagination.Index 1}}">{{plus .Pagination.Index 1}}</a></li>
                     {{end}} {{if le (plus .Pagination.Index 2) .Pagination.Count}}
                     <li><a href="/category?page={{plus .Pagination.Index 2}}">{{plus .Pagination.Index 2}}</a></li>
-                    {{end}} {{if eq .Pagination.Index 1}} {{if le (plus .Pagination.Index 3) .Pagination.Count}}
-                    <li><a href="/category?page={{plus .Pagination.Index 3}}">{{plus .Pagination.Index 3}}</a></li>
-                    {{end}} {{if le (plus .Pagination.Index 4) .Pagination.Count}}
-                    <li><a href="/category?page={{plus .Pagination.Index 4}}">{{plus .Pagination.Index 4}}</a></li>
-                    {{end}} {{else if eq .Pagination.Index 2}}
-                    <li><a href="/category?page={{plus .Pagination.Index 3}}">{{plus .Pagination.Index 3}}</a></li>
-                    {{end}} {{if le .Pagination.Next .Pagination.Count}}
+                    {{end}}  {{if le .Pagination.Next .Pagination.Count}}
                     <li>
                         <a href="/category?page={{.Pagination.Next}}" aria-label="Next">
                             <span aria-hidden="true">&raquo;</span>
