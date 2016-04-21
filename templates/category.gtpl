@@ -12,15 +12,17 @@
                 <th>Category</th>
                 <th>Created Time</th>
                 <th>Created By</th>
-                <th colspan="2">Action</th>
+                <th colspan="3">Action</th>
             </tr>
 
             {{range .Categories}}
             <tr>
-                <td>{{.ID}}</td>
-                <td>{{.Name}}</td>
-                <td>{{.CreatedTime}}</td>
-                <td>{{.CreatedBy}}</td>
+                <td><span name="cateid">{{.ID}}</span></td>
+                <td><span name="catename">{{.Name}}</span></td>
+                <td><span name="catectime">{{.CreatedTime}}</span></td>
+                <td><span name="catecby">{{.CreatedBy}}</span></td>
+                <td><a href="javascript:" data-toggle="modal" data-target="#Modal" class="btn btn-link edit">Edit</td>
+                <td><a href="/subcategory?id={{.ID}}" class="btn btn-link">Add</td>
                 <td><a href="/category?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
             </tr>
             {{end}}
@@ -50,7 +52,7 @@
                     <li><a href="/category?page={{plus .Pagination.Index 1}}">{{plus .Pagination.Index 1}}</a></li>
                     {{end}} {{if le (plus .Pagination.Index 2) .Pagination.Count}}
                     <li><a href="/category?page={{plus .Pagination.Index 2}}">{{plus .Pagination.Index 2}}</a></li>
-                    {{end}}  {{if le .Pagination.Next .Pagination.Count}}
+                    {{end}} {{if le .Pagination.Next .Pagination.Count}}
                     <li>
                         <a href="/category?page={{.Pagination.Next}}" aria-label="Next">
                             <span aria-hidden="true">&raquo;</span>
@@ -68,5 +70,35 @@
                     </nav>
 
     </div>
+    <div class="modal fade" id="Modal" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="ModalLabel">Edit</h4>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="form-group">
+            <label for="catename" class="control-label">Name:</label>
+            <input type="text" class="form-control" id="catename">
+          </div>
+          <div class="form-group">
+            <label for="createdtime" class="control-label">Created Time:</label>
+            <input type="text" class="form-control" id="createdtime" disabled="disabled"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="createdby" class="control-label">Created By:</label>
+            <input type="text" class="form-control" id="createdby" disabled="disabled"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary">Update</button>
+      </div>
+    </div>
+  </div>
+</div>
 </form>
 {{template "footer" .}}
