@@ -165,6 +165,7 @@ func init() {
 		Funcs(template.FuncMap{"plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
 		ParseFiles("./templates/category.gtpl", "./templates/main.gtpl"))
 	subcategorytemplate = template.Must(template.New("subcategory.gtpl").
+		Funcs(template.FuncMap{"plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
 		ParseFiles("./templates/subcategory.gtpl", "./templates/main.gtpl"))
 	itemtemplate = template.Must(template.New("item.gtpl").
 		ParseFiles("./templates/item.gtpl", "./templates/main.gtpl"))
@@ -602,17 +603,17 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/category?page="+pageIndex, http.StatusMovedPermanently)
 	}
 }
-func (subcate Subcategory) GetEntity() []Subcategory {
+func (subcate Subcategory) GetEntity(pagination Pagination) []Subcategory {
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
 		glog.Errorf("Subcategory->GetEntity->open db err: %v\n", err)
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("SELECT ID, Name, CreatedTime, CreatedBy FROM Subcategory where IsDeleted=0 and CategoryID=?")
+	stmt, err := db.Prepare("SELECT ID, Name, CreatedTime, CreatedBy FROM Subcategory where IsDeleted=0 and CategoryID=? limit ? offset ?")
 	if err != nil {
 		glog.Errorf("Subcategory->GetEntity->stmt err: %v\n", err)
 	}
-	rows, err := stmt.Query(subcate.Category.ID)
+	rows, err := stmt.Query(subcate.Category.ID, pageSize, pageSize*(pagination.Index-1))
 	if err != nil {
 		glog.Errorf("Subcategory->GetEntity->rows err: %v\n", err)
 	}
@@ -643,6 +644,27 @@ func (subcate Subcategory) AddEntity() int64 {
 		glog.Errorf("Subcategory->AddEntity->get LastInsertId err: %v\n", err)
 	}
 	return id
+}
+func (subcate Subcategory) UpdEntity() int64 {
+	esubcate := subcate.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Subcategory->AddEntity->open db err: %v\n", err)
+	}
+	stmt, err := db.Prepare("update Subcategory set CategoryID=?,Name=?,CreatedTime=?,CreatedBy=?) values(?,?,?,?)")
+	if err != nil {
+		glog.Errorf("Subcategory->AddEntity->stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(esubcate.CategoryEncrypted.ID, esubcate.Name,
+		esubcate.OperationEncrypted.CreatedTime, esubcate.OperationEncrypted.CreatedBy)
+	if err != nil {
+		glog.Errorf("Subcategory->AddEntity->exec err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("Subcategory->AddEntity->get LastInsertId err: %v\n", err)
+	}
+	return rowsAffected
 }
 func (subcate Subcategory) Encrypt() SubcategoryEncrypted {
 	name, err := mtcrypto.AESEncrypt(key, subcate.Name)
@@ -678,6 +700,14 @@ func (esubcate SubcategoryEncrypted) Decrypt() Subcategory {
 		Category:    esubcate.CategoryEncrypted.Decrypt(),
 	}
 }
+func (subcate Subcategory) Count() (count int) {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open sqlite err: %v\n", err)
+	}
+	db.QueryRow("select count(*) from Subcategory where IsDeleted=0", nil).Scan(&count)
+	return count
+}
 func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	if r.Method == "GET" {
@@ -700,18 +730,44 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 				cates[i].Selected = true
 			}
 		}
-		subcates := subcate.GetEntity()
+		page := r.URL.Query().Get("page")
+		pageIndex, err := strconv.Atoi(page)
+		if err != nil {
+			pageIndex = 1
+			glog.Infof("get page index err: %v", err)
+		}
+
+		var pagination Pagination
+		pagination.Index = pageIndex
+		count := subcate.Count()
+		if count%2 == 0 {
+			pagination.Count = count / 2
+		} else {
+			pagination.Count = count/2 + 1
+		}
+		pagination.Previous = pageIndex - 1
+		pagination.Next = pageIndex + 1
+		if pagination.Index > pagination.Count {
+			pagination.Index -= 1
+		}
+		if pagination.Index < 1 {
+			pagination.Index = 1
+		}
+		subcates := subcate.GetEntity(pagination)
 		data := struct {
 			Title         string
 			Categories    []Category
 			Subcategories []Subcategory
+			Pagination    Pagination
 		}{
 			Title:         "Subcategory",
 			Categories:    cates,
 			Subcategories: subcates,
+			Pagination:    pagination,
 		}
 		subcategorytemplate.Execute(w, data)
 	} else if r.Method == "POST" {
+
 		subcateName := r.FormValue("subcateName")
 		cateIDForm := r.FormValue("category")
 		var subcate Subcategory
@@ -899,7 +955,7 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 			glog.Infof("convert cid to int err: %v\n", err)
 		}
 		subcate.Category.ID = cid
-		subcates := subcate.GetEntity()
+		subcates := subcate.GetEntity(Pagination{Index: -1})
 		sid, err := strconv.Atoi(subcateID)
 		if err != nil {
 			sid = 0
@@ -1264,7 +1320,7 @@ func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		subcate.Category.ID = cateID
 	}
-	subcates := subcate.GetEntity()
+	subcates := subcate.GetEntity(Pagination{Index: -1})
 	data, err := json.Marshal(subcates)
 	if err != nil {
 		glog.Errorf("convert %T to json err: %v", subcates, err)
