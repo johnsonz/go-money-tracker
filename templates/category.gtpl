@@ -16,7 +16,7 @@
                 <th colspan="3">Action</th>
             </tr>
 
-            {{range .Categories}}
+            {{if .Categories}} {{range .Categories}}
             <tr>
                 <td><span name="cateid">{{.ID}}</span></td>
                 <td><span name="catename">{{.Name}}</span></td>
@@ -27,8 +27,18 @@
                 <td><a href="/category?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
             </tr>
             {{end}}
+            {{else}}
+                <tr>
+                    <td colspan="7">
+                        <blockquote>
+                        <p>No data found.</p>
+                        </blockquote>
+                    </td>
+                </tr>
+            {{end}}
 
         </table>
+
         <nav>
             <ul class="pagination">
                 {{if le .Pagination.Previous 0}}
@@ -99,7 +109,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                    <input type="submit" name="update" value="Update" class="btn btn-primary"/>
+                    <input type="submit" name="update" value="Update" class="btn btn-primary" />
                 </div>
             </div>
         </div>
