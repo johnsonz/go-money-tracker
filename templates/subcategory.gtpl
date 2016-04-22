@@ -19,13 +19,22 @@
                 <th>CreatedTime</th>
                 <th>CreatedBy</th>
             </tr>
-            {{range .Subcategories}}
+            {{if .Subcategories}}{{range .Subcategories}}
             <tr>
                 <td>{{.ID}}</td>
                 <td>{{.Name}}</td>
                 <td>{{.CreatedTime}}</td>
                 <td>{{.CreatedBy}}</td>
             </tr>
+            {{end}}
+            {{else}}
+                <tr>
+                    <td colspan="7">
+                        <blockquote>
+                        <p>No data found.</p>
+                        </blockquote>
+                    </td>
+                </tr>
             {{end}}
         </table>
         <nav>
