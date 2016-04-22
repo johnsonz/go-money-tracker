@@ -81,7 +81,7 @@
                     </nav>
 
     </div>
-    <input type="text" name="updatedid" id="updatedid" class="form-control" hidden="hidden">
+    <input type="text" name="updatedid" id="updatedid"  hidden="hidden">
     <div class="modal fade" id="Modal" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
