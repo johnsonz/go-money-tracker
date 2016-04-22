@@ -708,6 +708,14 @@ func (subcate Subcategory) Count() (count int) {
 	db.QueryRow("select count(*) from Subcategory where IsDeleted=0", nil).Scan(&count)
 	return count
 }
+func (subcate Subcategory) CountByCategoryId(id int) (count int) {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open sqlite err: %v\n", err)
+	}
+	db.QueryRow("select count(*) from Subcategory where IsDeleted=0 and CategoryID=?", id).Scan(&count)
+	return count
+}
 func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	if r.Method == "GET" {
@@ -739,7 +747,7 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 
 		var pagination Pagination
 		pagination.Index = pageIndex
-		count := subcate.Count()
+		count := subcate.CountByCategoryId(subcate.Category.ID)
 		if count%2 == 0 {
 			pagination.Count = count / 2
 		} else {
@@ -759,11 +767,13 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 			Categories    []Category
 			Subcategories []Subcategory
 			Pagination    Pagination
+			CategoryId    int
 		}{
 			Title:         "Subcategory",
 			Categories:    cates,
 			Subcategories: subcates,
 			Pagination:    pagination,
+			CategoryId:    subcate.Category.ID,
 		}
 		subcategorytemplate.Execute(w, data)
 	} else if r.Method == "POST" {
