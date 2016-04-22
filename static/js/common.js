@@ -44,10 +44,12 @@ $(function() {
     $('#Modal').on('show.bs.modal', function(event) {
         var element = $(event.relatedTarget) // element that triggered the modal
         var ep=element.parent().parent();
+        var id=ep.find("span[name='cateid']").html();
         var name=ep.find("span[name='catename']").html();
         var time=ep.find("span[name='catectime']").html();
         var by=ep.find("span[name='catecby']").html();
         var modal = $(this)
+        $('#updatedid').val(id);
         modal.find('.modal-body #catename').val(name);
         modal.find('.modal-body #createdtime').val(time);
         modal.find('.modal-body #createdby').val(by);

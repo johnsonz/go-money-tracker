@@ -1,5 +1,6 @@
 {{template "header" .}} {{template "nav" .}}
 <form action="/category" method="post">
+    <input type="text" hidden="hidden" name="pageIndex" value="{{.Pagination.Index}}" />
     <div class="wrap-primary">
         <label for="inputCateName" class="control-label">Category</label>
         <input type="text" name="cateName" id="inputCateName" />
@@ -70,35 +71,38 @@
                     </nav>
 
     </div>
+    <input type="text" name="updatedid" id="updatedid" class="form-control" hidden="hidden">
     <div class="modal fade" id="Modal" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="ModalLabel">Edit</h4>
-      </div>
-      <div class="modal-body">
-        <form>
-          <div class="form-group">
-            <label for="catename" class="control-label">Name:</label>
-            <input type="text" class="form-control" id="catename">
-          </div>
-          <div class="form-group">
-            <label for="createdtime" class="control-label">Created Time:</label>
-            <input type="text" class="form-control" id="createdtime" disabled="disabled"></textarea>
-          </div>
-          <div class="form-group">
-            <label for="createdby" class="control-label">Created By:</label>
-            <input type="text" class="form-control" id="createdby" disabled="disabled"></textarea>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary">Update</button>
-      </div>
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="ModalLabel">Edit</h4>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <label for="catename" class="control-label">Name:</label>
+                            <input type="text" name="updatedname" class="form-control" id="catename">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdtime" class="control-label">Created Time:</label>
+                            <input type="text" class="form-control" id="createdtime" disabled="disabled">
+                            </textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="createdby" class="control-label">Created By:</label>
+                            <input type="text" class="form-control" id="createdby" disabled="disabled">
+                            </textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <input type="submit" name="update" value="Update" class="btn btn-primary"/>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 </form>
 {{template "footer" .}}

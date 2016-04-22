@@ -386,6 +386,27 @@ func (cate Category) AddEntity() int64 {
 	}
 	return id
 }
+func (cate Category) UpdEntity() int64 {
+	ecate := cate.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("update Category set Name=? where id=?")
+	if err != nil {
+		glog.Errorf("Category->AddEntity->stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(ecate.Name, ecate.ID)
+	if err != nil {
+		glog.Errorf("Category->AddEntity->exec err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("Category->AddEntity->get lastinsertid err: %v\n", err)
+	}
+	return rowsAffected
+}
 func (cate Category) DelEntity() int64 {
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
@@ -492,17 +513,35 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		categorytemplate.Execute(w, data)
 	} else if r.Method == "POST" {
-		cateName := r.FormValue("cateName")
-		var cate Category
-		cate.Name = cateName
-		cate.CreatedTime = time.Now().Format(LongFormat)
-		cate.CreatedBy = 0
+		pageIndex := r.FormValue("pageIndex")
+		if r.FormValue("update") == "Update" {
+			updatedname := r.FormValue("updatedname")
+			updatedid := r.FormValue("updatedid")
+			id, err := strconv.Atoi(updatedid)
+			if err != nil {
+				glog.Errorf("convert string %s to int err: %v", updatedid, err)
+			}
+			var cate Category
+			cate.ID = id
+			cate.Name = updatedname
+			rowsAffected := cate.UpdEntity()
+			if rowsAffected > 0 {
+				//successful
+			}
 
-		lastInsertId := cate.AddEntity()
-		if lastInsertId > -1 {
-			//insert successful
+		} else {
+			cateName := r.FormValue("cateName")
+			var cate Category
+			cate.Name = cateName
+			cate.CreatedTime = time.Now().Format(LongFormat)
+			cate.CreatedBy = 0
+
+			lastInsertId := cate.AddEntity()
+			if lastInsertId > -1 {
+				//insert successful
+			}
 		}
-		http.Redirect(w, r, "/category", http.StatusMovedPermanently)
+		http.Redirect(w, r, "/category?page="+pageIndex, http.StatusMovedPermanently)
 	}
 }
 func (subcate Subcategory) GetEntity() []Subcategory {
