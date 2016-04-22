@@ -21,18 +21,16 @@ import (
 
 // Category
 type Category struct {
-	ID          int
-	Name        string
-	CreatedTime string
-	CreatedBy   int
-	Selected    bool
+	ID       int
+	Name     string
+	Selected bool
+	Operation
 }
 type CategoryEncrypted struct {
-	ID          int
-	Name        []byte
-	CreatedTime []byte
-	CreatedBy   int
-	Selected    bool
+	ID       int
+	Name     []byte
+	Selected bool
+	OperationEncrypted
 }
 type Subcategory struct {
 	ID          int
@@ -115,6 +113,22 @@ type UserEncrypted struct {
 	Hostname    []byte
 	CreatedTime []byte
 	CreatedBy   int
+}
+type Operation struct {
+	CreatedTime string
+	CreatedBy   int
+	UpdatedTime string
+	UpdatedBy   int
+	DeletedTime string
+	DeletedBy   int
+}
+type OperationEncrypted struct {
+	CreatedTime []byte
+	CreatedBy   int
+	UpdatedTime []byte
+	UpdatedBy   int
+	DeletedTime []byte
+	DeletedBy   int
 }
 type Pagination struct {
 	Count    int
@@ -341,9 +355,52 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		logintemplate.Execute(w, data)
 	}
 }
+func (op Operation) Encryt() OperationEncrypted {
+	ctime, err := mtcrypto.AESEncrypt(key, op.CreatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", op.CreatedTime, err)
+	}
+	utime, err := mtcrypto.AESEncrypt(key, op.UpdatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", op.UpdatedTime, err)
+	}
+	dtime, err := mtcrypto.AESEncrypt(key, op.DeletedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", op.DeletedTime, err)
+	}
+	return OperationEncrypted{
+		CreatedTime: ctime,
+		CreatedBy:   op.CreatedBy,
+		UpdatedTime: utime,
+		UpdatedBy:   op.UpdatedBy,
+		DeletedTime: dtime,
+		DeletedBy:   op.DeletedBy,
+	}
+}
+func (op OperationEncrypted) Decryt() Operation {
+	ctime, err := mtcrypto.AESDecrypt(key, op.CreatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", op.CreatedTime, err)
+	}
+	utime, err := mtcrypto.AESDecrypt(key, op.UpdatedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", op.UpdatedTime, err)
+	}
+	dtime, err := mtcrypto.AESDecrypt(key, op.DeletedTime)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", op.DeletedTime, err)
+	}
+	return Operation{
+		CreatedTime: string(ctime),
+		CreatedBy:   op.CreatedBy,
+		UpdatedTime: string(utime),
+		UpdatedBy:   op.UpdatedBy,
+		DeletedTime: string(dtime),
+		DeletedBy:   op.DeletedBy,
+	}
+}
 func (cate Category) GetEntity(pagination Pagination) []Category {
 	db, err := sql.Open(dbDrive, "./data.db")
-
 	if err != nil {
 		glog.Errorf("Category->GetEntity->open sqlite err: %v\n", err)
 	}
@@ -376,7 +433,7 @@ func (cate Category) AddEntity() int64 {
 	if err != nil {
 		glog.Errorf("Category->AddEntity->stmt err: %v\n", err)
 	}
-	res, err := stmt.Exec(ecate.Name, ecate.CreatedTime, ecate.CreatedBy)
+	res, err := stmt.Exec(ecate.Name, ecate.OperationEncrypted.CreatedTime, ecate.OperationEncrypted.CreatedBy)
 	if err != nil {
 		glog.Errorf("Category->AddEntity->exec err: %v\n", err)
 	}
@@ -393,11 +450,11 @@ func (cate Category) UpdEntity() int64 {
 		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("update Category set Name=? where id=?")
+	stmt, err := db.Prepare("update Category set Name=?,UpdatedTime=?,UpdatedBy=? where id=?")
 	if err != nil {
 		glog.Errorf("Category->AddEntity->stmt err: %v\n", err)
 	}
-	res, err := stmt.Exec(ecate.Name, ecate.ID)
+	res, err := stmt.Exec(ecate.Name, ecate.OperationEncrypted.UpdatedTime, ecate.OperationEncrypted.UpdatedBy, ecate.ID)
 	if err != nil {
 		glog.Errorf("Category->AddEntity->exec err: %v\n", err)
 	}
@@ -408,16 +465,17 @@ func (cate Category) UpdEntity() int64 {
 	return rowsAffected
 }
 func (cate Category) DelEntity() int64 {
+	ecate := cate.Encrypt()
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
 		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("update Category set IsDeleted=1 where id=?")
+	stmt, err := db.Prepare("update Category set IsDeleted=1,DeletedTime=?,DeletedBy=? where id=?")
 	if err != nil {
 		glog.Errorf("Category->AddEntity->stmt err: %v\n", err)
 	}
-	res, err := stmt.Exec(cate.ID)
+	res, err := stmt.Exec(ecate.OperationEncrypted.DeletedTime, ecate.OperationEncrypted.DeletedBy, ecate.ID)
 	if err != nil {
 		glog.Errorf("Category->AddEntity->exec err: %v\n", err)
 	}
@@ -432,15 +490,10 @@ func (cate Category) Encrypt() CategoryEncrypted {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", cate.Name, err)
 	}
-	ctime, err := mtcrypto.AESEncrypt(key, cate.CreatedTime)
-	if err != nil {
-		glog.Errorf("enctypt name %s err: %v", cate.CreatedTime, err)
-	}
 	return CategoryEncrypted{
-		ID:          cate.ID,
-		Name:        name,
-		CreatedTime: ctime,
-		CreatedBy:   cate.CreatedBy,
+		ID:                 cate.ID,
+		Name:               name,
+		OperationEncrypted: cate.Operation.Encryt(),
 	}
 }
 func (ecate CategoryEncrypted) Decrypt() Category {
@@ -448,15 +501,10 @@ func (ecate CategoryEncrypted) Decrypt() Category {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", ecate.Name, err)
 	}
-	ctime, err := mtcrypto.AESDecrypt(key, ecate.CreatedTime)
-	if err != nil {
-		glog.Errorf("enctypt name %s err: %v", ecate.CreatedTime, err)
-	}
 	return Category{
-		ID:          ecate.ID,
-		Name:        string(name),
-		CreatedTime: string(ctime),
-		CreatedBy:   ecate.CreatedBy,
+		ID:        ecate.ID,
+		Name:      string(name),
+		Operation: ecate.OperationEncrypted.Decryt(),
 	}
 }
 func (cate Category) Count() (count int) {
@@ -478,6 +526,8 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 				glog.Errorf("convert string %s to int err: %v", cid, err)
 			}
 			cate.ID = id
+			cate.Operation.DeletedTime = time.Now().Format(LongFormat)
+			cate.Operation.DeletedBy = 0
 			rowsAffected := cate.DelEntity()
 			if rowsAffected > 0 {
 				//successful
@@ -524,6 +574,8 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 			var cate Category
 			cate.ID = id
 			cate.Name = updatedname
+			cate.Operation.UpdatedTime = time.Now().Format(LongFormat)
+			cate.Operation.UpdatedBy = 0
 			rowsAffected := cate.UpdEntity()
 			if rowsAffected > 0 {
 				//successful
@@ -533,8 +585,8 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 			cateName := r.FormValue("cateName")
 			var cate Category
 			cate.Name = cateName
-			cate.CreatedTime = time.Now().Format(LongFormat)
-			cate.CreatedBy = 0
+			cate.Operation.CreatedTime = time.Now().Format(LongFormat)
+			cate.Operation.CreatedBy = 0
 
 			lastInsertId := cate.AddEntity()
 			if lastInsertId > -1 {
@@ -1215,10 +1267,4 @@ func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 }
 func GetAmount(price float64, quantity int64) float64 {
 	return price * float64(quantity)
-}
-func Plus(m, n int) int {
-	return m + n
-}
-func Minus(m, n int) int {
-	return m - n
 }
