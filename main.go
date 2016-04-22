@@ -542,7 +542,6 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 
 		var pagination Pagination
 		pagination.Index = pageIndex
-		cates := cate.GetEntity(pagination)
 		count := cate.Count()
 		if count%2 == 0 {
 			pagination.Count = count / 2
@@ -551,6 +550,13 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		pagination.Previous = pageIndex - 1
 		pagination.Next = pageIndex + 1
+		if pagination.Index > pagination.Count {
+			pagination.Index -= 1
+		}
+		if pagination.Index < 1 {
+			pagination.Index = 1
+		}
+		cates := cate.GetEntity(pagination)
 
 		data := struct {
 			Title      string
