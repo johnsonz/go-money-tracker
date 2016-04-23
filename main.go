@@ -651,12 +651,12 @@ func (subcate Subcategory) UpdEntity() int64 {
 	if err != nil {
 		glog.Errorf("Subcategory->AddEntity->open db err: %v\n", err)
 	}
-	stmt, err := db.Prepare("update Subcategory set CategoryID=?,Name=?,CreatedTime=?,CreatedBy=?) values(?,?,?,?)")
+	stmt, err := db.Prepare("update Subcategory set Name=?,UpdatedTime=?,UpdatedBy=? where ID=?")
 	if err != nil {
 		glog.Errorf("Subcategory->AddEntity->stmt err: %v\n", err)
 	}
-	res, err := stmt.Exec(esubcate.CategoryEncrypted.ID, esubcate.Name,
-		esubcate.OperationEncrypted.CreatedTime, esubcate.OperationEncrypted.CreatedBy)
+	res, err := stmt.Exec(esubcate.Name, esubcate.OperationEncrypted.UpdatedTime,
+		esubcate.OperationEncrypted.UpdatedBy, esubcate.ID)
 	if err != nil {
 		glog.Errorf("Subcategory->AddEntity->exec err: %v\n", err)
 	}
@@ -777,22 +777,40 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		subcategorytemplate.Execute(w, data)
 	} else if r.Method == "POST" {
-
-		subcateName := r.FormValue("subcateName")
 		cateIDForm := r.FormValue("category")
-		var subcate Subcategory
-		subcate.Name = subcateName
 		cateID, err := strconv.Atoi(cateIDForm)
 		if err != nil {
 			glog.Errorf("SubcategoryHandler->convert id err: %v\n", err)
 		}
-		subcate.Category.ID = cateID
-		subcate.CreatedTime = time.Now().Format(LongFormat)
-		subcate.CreatedBy = 0
+		if r.FormValue("update") == "Update" {
+			updatedname := r.FormValue("updatedname")
+			updatedid := r.FormValue("updatedid")
+			id, err := strconv.Atoi(updatedid)
+			if err != nil {
+				glog.Errorf("convert string %s to int err: %v", updatedid, err)
+			}
+			var subcate Subcategory
+			subcate.ID = id
+			subcate.Name = updatedname
+			subcate.Operation.UpdatedTime = time.Now().Format(LongFormat)
+			subcate.Operation.UpdatedBy = 0
+			rowsAffected := subcate.UpdEntity()
+			if rowsAffected > 0 {
+				//successful
+			}
+		} else {
+			subcateName := r.FormValue("subcateName")
+			var subcate Subcategory
+			subcate.Name = subcateName
 
-		lastInsertId := subcate.AddEntity()
-		if lastInsertId > -1 {
-			//insert successful
+			subcate.Category.ID = cateID
+			subcate.CreatedTime = time.Now().Format(LongFormat)
+			subcate.CreatedBy = 0
+
+			lastInsertId := subcate.AddEntity()
+			if lastInsertId > -1 {
+				//insert successful
+			}
 		}
 		http.Redirect(w, r, "/subcategory?id="+cateIDForm, http.StatusMovedPermanently)
 	}
