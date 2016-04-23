@@ -13,7 +13,7 @@
                 <th>Category</th>
                 <th>Created Time</th>
                 <th>Created By</th>
-                <th colspan="3">Action</th>
+                <th colspan="4">Action</th>
             </tr>
 
             {{if .Categories}} {{range .Categories}}
@@ -22,6 +22,7 @@
                 <td><span name="catename">{{.Name}}</span></td>
                 <td><span name="catectime">{{.CreatedTime}}</span></td>
                 <td><span name="catecby">{{.CreatedBy}}</span></td>
+                <td><a href="/subcategory?id={{.ID}}" class="btn btn-link">View</td>
                 <td><a href="javascript:" data-toggle="modal" data-target="#Modal" class="btn btn-link edit">Edit</td>
                 <td><a href="/subcategory?id={{.ID}}" class="btn btn-link">Add</td>
                 <td><a href="/category?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>

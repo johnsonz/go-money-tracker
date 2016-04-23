@@ -21,7 +21,6 @@
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li name="cate"><a href="/category">Category</a></li>
-        <li name="subcate"><a href="/subcategory">Subcategory</a></li>
         <li name="item"><a href="/item">Item</a></li>
         <li name="detail"><a href="/detail">Detail</a></li>
       </ul>
