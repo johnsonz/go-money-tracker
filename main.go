@@ -33,20 +33,18 @@ type CategoryEncrypted struct {
 	OperationEncrypted
 }
 type Subcategory struct {
-	ID          int
-	Name        string
-	CreatedTime string
-	CreatedBy   int
-	Selected    bool
+	ID       int
+	Name     string
+	Selected bool
 	Category
+	Operation
 }
 type SubcategoryEncrypted struct {
-	ID          int
-	Name        []byte
-	CreatedTime []byte
-	CreatedBy   int
-	Selected    bool
+	ID       int
+	Name     []byte
+	Selected bool
 	CategoryEncrypted
+	OperationEncrypted
 }
 type Item struct {
 	ID            int
@@ -609,7 +607,7 @@ func (subcate Subcategory) GetEntity(pagination Pagination) []Subcategory {
 		glog.Errorf("Subcategory->GetEntity->open db err: %v\n", err)
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("SELECT ID, Name, CreatedTime, CreatedBy FROM Subcategory where IsDeleted=0 and CategoryID=? limit ? offset ?")
+	stmt, err := db.Prepare("SELECT ID,CategoryID, Name, CreatedTime, CreatedBy FROM Subcategory where IsDeleted=0 and CategoryID=? limit ? offset ?")
 	if err != nil {
 		glog.Errorf("Subcategory->GetEntity->stmt err: %v\n", err)
 	}
@@ -620,7 +618,8 @@ func (subcate Subcategory) GetEntity(pagination Pagination) []Subcategory {
 	var subcates []Subcategory
 	for rows.Next() {
 		var esubcate SubcategoryEncrypted
-		rows.Scan(&esubcate.ID, &esubcate.Name, &esubcate.CreatedTime, &esubcate.CreatedBy)
+		rows.Scan(&esubcate.ID, &esubcate.CategoryEncrypted.ID, &esubcate.Name,
+			&esubcate.OperationEncrypted.CreatedTime, &esubcate.OperationEncrypted.CreatedBy)
 		subcates = append(subcates, esubcate.Decrypt())
 	}
 	return subcates
@@ -635,7 +634,8 @@ func (subcate Subcategory) AddEntity() int64 {
 	if err != nil {
 		glog.Errorf("Subcategory->AddEntity->stmt err: %v\n", err)
 	}
-	res, err := stmt.Exec(esubcate.CategoryEncrypted.ID, esubcate.Name, esubcate.CreatedTime, esubcate.CreatedBy)
+	res, err := stmt.Exec(esubcate.CategoryEncrypted.ID, esubcate.Name,
+		esubcate.OperationEncrypted.CreatedTime, esubcate.OperationEncrypted.CreatedBy)
 	if err != nil {
 		glog.Errorf("Subcategory->AddEntity->exec err: %v\n", err)
 	}
@@ -666,21 +666,37 @@ func (subcate Subcategory) UpdEntity() int64 {
 	}
 	return rowsAffected
 }
+func (subcate Subcategory) DelEntity() int64 {
+	ecate := subcate.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("update Subcategory set IsDeleted=1,DeletedTime=?,DeletedBy=? where id=?")
+	if err != nil {
+		glog.Errorf("Category->AddEntity->stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(ecate.OperationEncrypted.DeletedTime, ecate.OperationEncrypted.DeletedBy, ecate.ID)
+	if err != nil {
+		glog.Errorf("Category->AddEntity->exec err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("Category->AddEntity->get lastinsertid err: %v\n", err)
+	}
+	return rowsAffected
+}
 func (subcate Subcategory) Encrypt() SubcategoryEncrypted {
 	name, err := mtcrypto.AESEncrypt(key, subcate.Name)
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", subcate.Name, err)
 	}
-	ctime, err := mtcrypto.AESEncrypt(key, subcate.CreatedTime)
-	if err != nil {
-		glog.Errorf("enctypt name %s err: %v", subcate.CreatedTime, err)
-	}
 	return SubcategoryEncrypted{
-		ID:                subcate.ID,
-		Name:              name,
-		CreatedTime:       ctime,
-		CreatedBy:         subcate.CreatedBy,
-		CategoryEncrypted: subcate.Category.Encrypt(),
+		ID:                 subcate.ID,
+		Name:               name,
+		OperationEncrypted: subcate.Operation.Encryt(),
+		CategoryEncrypted:  subcate.Category.Encrypt(),
 	}
 }
 func (esubcate SubcategoryEncrypted) Decrypt() Subcategory {
@@ -688,16 +704,11 @@ func (esubcate SubcategoryEncrypted) Decrypt() Subcategory {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", esubcate.Name, err)
 	}
-	ctime, err := mtcrypto.AESDecrypt(key, esubcate.CreatedTime)
-	if err != nil {
-		glog.Errorf("enctypt name %s err: %v", esubcate.CreatedTime, err)
-	}
 	return Subcategory{
-		ID:          esubcate.ID,
-		Name:        string(name),
-		CreatedTime: string(ctime),
-		CreatedBy:   esubcate.CreatedBy,
-		Category:    esubcate.CategoryEncrypted.Decrypt(),
+		ID:        esubcate.ID,
+		Name:      string(name),
+		Operation: esubcate.OperationEncrypted.Decryt(),
+		Category:  esubcate.CategoryEncrypted.Decrypt(),
 	}
 }
 func (subcate Subcategory) Count() (count int) {
@@ -719,12 +730,18 @@ func (subcate Subcategory) CountByCategoryId(id int) (count int) {
 func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	if r.Method == "GET" {
-		var cate Category
-		cates := cate.GetEntity(Pagination{Index: -1})
 		var subcate Subcategory
 		cateIDFromURL := r.URL.Query().Get("id")
 		cateID, err := strconv.Atoi(cateIDFromURL)
 		subcate.Category.ID = 0
+		var cate Category
+		cates := cate.GetEntity(Pagination{Index: -1})
+
+		for i, _ := range cates {
+			if cates[i].ID == subcate.Category.ID {
+				cates[i].Selected = true
+			}
+		}
 		if err != nil {
 			if len(cates) > 0 {
 				subcate.Category.ID = cates[0].ID
@@ -733,11 +750,21 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			subcate.Category.ID = cateID
 		}
-		for i, _ := range cates {
-			if cates[i].ID == subcate.Category.ID {
-				cates[i].Selected = true
+		if r.URL.Query().Get("action") == delAction {
+			subcateIDFromURL := r.URL.Query().Get("sid")
+			subcateID, err := strconv.Atoi(subcateIDFromURL)
+			if err != nil {
+				glog.Errorf("Subcategory->convert id err: %v", err)
+			}
+			subcate.ID = subcateID
+			subcate.Operation.DeletedTime = time.Now().Format(LongFormat)
+			subcate.Operation.DeletedBy = 0
+			rowsAffected := subcate.DelEntity()
+			if rowsAffected > 0 {
+				//successful
 			}
 		}
+
 		page := r.URL.Query().Get("page")
 		pageIndex, err := strconv.Atoi(page)
 		if err != nil {

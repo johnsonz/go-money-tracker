@@ -27,7 +27,7 @@
                 <td><span name="subcatectime">{{.CreatedTime}}</span></td>
                 <td><span name="subcatecby">{{.CreatedBy}}</span></td>
                 <td><a href="javascript:" data-toggle="modal" data-target="#Modal-Subcate" class="btn btn-link edit">Edit</td>
-                <td><a href="/subcategory?id={{.ID}}&sid={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
+                <td><a href="/subcategory?id={{.Category.ID}}&sid={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
             </tr>
             {{end}}
             {{else}}
