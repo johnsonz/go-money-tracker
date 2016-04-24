@@ -74,7 +74,7 @@
                 <th>Remark</th>
                 <th colspan="4">Action</th>
             </tr>
-            {{range .Items}}
+            {{if .Items}}{{range .Items}}
             <tr>
                 <td>{{.ID}}</td>
                 <td>{{.Subcategory.Category.Name}}</td>
@@ -89,6 +89,15 @@
                 <td><a href="javascript:" data-toggle="modal" data-target="#Modal" class="btn btn-link edit">Edit</td>
                 <td><a href="/detail?id={{.ID}}" class="btn btn-link">Add</td>
                 <td><a href="/item?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
+            </tr>
+            {{end}}
+            {{else}}
+            <tr>
+                <td colspan="13">
+                    <blockquote>
+                    <p>No data found.</p>
+                    </blockquote>
+                </td>
             </tr>
             {{end}}
         </table>
