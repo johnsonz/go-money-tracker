@@ -54,9 +54,8 @@ type Item struct {
 	Receipt       string
 	Amount        float64
 	Remark        string
-	CreatedTime   string
-	CreatedBy     int
 	Subcategory
+	Operation
 }
 type ItemEncrypted struct {
 	ID            int
@@ -66,9 +65,8 @@ type ItemEncrypted struct {
 	Receipt       []byte
 	Amount        []byte
 	Remark        []byte
-	CreatedTime   []byte
-	CreatedBy     int
 	SubcategoryEncrypted
+	OperationEncrypted
 }
 type Detail struct {
 	ID          int
@@ -166,6 +164,7 @@ func init() {
 		Funcs(template.FuncMap{"plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
 		ParseFiles("./templates/subcategory.gtpl", "./templates/main.gtpl"))
 	itemtemplate = template.Must(template.New("item.gtpl").
+		Funcs(template.FuncMap{"plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
 		ParseFiles("./templates/item.gtpl", "./templates/main.gtpl"))
 	detailtemplate = template.Must(template.New("detail.gtpl").
 		Funcs(template.FuncMap{"getamount": GetAmount}).
@@ -842,18 +841,18 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/subcategory?id="+cateIDForm, http.StatusMovedPermanently)
 	}
 }
-func (item Item) GetEntity() []Item {
+func (item Item) GetEntity(pagination Pagination) []Item {
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
 		glog.Errorf("Item->GetEntity->open db err: %v\n", err)
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("select ID,Store,Address,PurchasedDate,Amount,ReceiptImage,Remark,CreatedTime,CreatedBy,SubcategoryID,SubcategoryName,CategoryID,CategoryName from vw_Item where IsDeleted=0")
+	stmt, err := db.Prepare("select ID,Store,Address,PurchasedDate,Amount,ReceiptImage,Remark,CreatedTime,CreatedBy,SubcategoryID,SubcategoryName,CategoryID,CategoryName from vw_Item where IsDeleted=0 limit ? offset ?")
 	if err != nil {
 		glog.Errorf("Item->GetEntity->stmt err: %v\n", err)
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(pageSize, pageSize*(pagination.Index-1))
 	if err != nil {
 		glog.Errorf("Item->GetEntity->query err: %v\n", err)
 	}
@@ -861,14 +860,11 @@ func (item Item) GetEntity() []Item {
 	var items []Item
 	for rows.Next() {
 		var eitem ItemEncrypted
-		//var receiptimage []byte
 		rows.Scan(&eitem.ID, &eitem.Store, &eitem.Address, &eitem.PurchasedDate, &eitem.Amount,
-			&eitem.Receipt, &eitem.Remark, &eitem.CreatedTime, &eitem.CreatedBy,
-			&eitem.SubcategoryEncrypted.ID, &eitem.SubcategoryEncrypted.Name,
-			&eitem.SubcategoryEncrypted.CategoryEncrypted.ID,
+			&eitem.Receipt, &eitem.Remark, &eitem.OperationEncrypted.CreatedTime,
+			&eitem.OperationEncrypted.CreatedBy, &eitem.SubcategoryEncrypted.ID,
+			&eitem.SubcategoryEncrypted.Name, &eitem.SubcategoryEncrypted.CategoryEncrypted.ID,
 			&eitem.SubcategoryEncrypted.CategoryEncrypted.Name)
-		//item.Receipt = base64.StdEncoding.EncodeToString(receiptimage)
-		//eitem.Receipt = []byte(mtcrypto.Base64Encode(eitem.Receipt))
 		item := eitem.Decrypt()
 		item.Receipt = mtcrypto.Base64Encode([]byte(item.Receipt))
 		items = append(items, item)
@@ -887,7 +883,9 @@ func (item Item) AddEntity() int64 {
 		glog.Errorf("Item->AddEntity->stmt err: %v\n", err)
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(eitem.Store, eitem.Address, eitem.PurchasedDate, eitem.Receipt, eitem.Remark, eitem.CreatedTime, eitem.CreatedBy, eitem.SubcategoryEncrypted.ID)
+	res, err := stmt.Exec(eitem.Store, eitem.Address, eitem.PurchasedDate, eitem.Receipt,
+		eitem.Remark, eitem.OperationEncrypted.CreatedTime, eitem.OperationEncrypted.CreatedBy,
+		eitem.SubcategoryEncrypted.ID)
 	if err != nil {
 		glog.Errorf("Item->AddEntity->exec err: %v\n", err)
 	}
@@ -922,10 +920,6 @@ func (item Item) Encrypt() ItemEncrypted {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", item.Remark, err)
 	}
-	ctime, err := mtcrypto.AESEncrypt(key, item.CreatedTime)
-	if err != nil {
-		glog.Errorf("enctypt name %s err: %v", item.CreatedTime, err)
-	}
 
 	return ItemEncrypted{
 		ID:                   item.ID,
@@ -935,8 +929,7 @@ func (item Item) Encrypt() ItemEncrypted {
 		Receipt:              receipt,
 		Amount:               amount,
 		Remark:               remark,
-		CreatedTime:          ctime,
-		CreatedBy:            item.CreatedBy,
+		OperationEncrypted:   item.Operation.Encryt(),
 		SubcategoryEncrypted: item.Subcategory.Encrypt(),
 	}
 }
@@ -969,11 +962,6 @@ func (eitem ItemEncrypted) Decrypt() Item {
 	if err != nil {
 		glog.Errorf("decrypt name %s err: %v", eitem.Remark, err)
 	}
-	ctime, err := mtcrypto.AESDecrypt(key, eitem.CreatedTime)
-	if err != nil {
-		glog.Errorf("decrypt name %s err: %v", eitem.CreatedTime, err)
-	}
-
 	return Item{
 		ID:            eitem.ID,
 		Store:         string(store),
@@ -982,10 +970,17 @@ func (eitem ItemEncrypted) Decrypt() Item {
 		Amount:        amount,
 		Receipt:       string(receipt),
 		Remark:        string(remark),
-		CreatedTime:   string(ctime),
-		CreatedBy:     eitem.CreatedBy,
+		Operation:     eitem.OperationEncrypted.Decryt(),
 		Subcategory:   eitem.SubcategoryEncrypted.Decrypt(),
 	}
+}
+func (item Item) Count() (count int) {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open sqlite err: %v\n", err)
+	}
+	db.QueryRow("select count(*) from vw_Item where IsDeleted=0", nil).Scan(&count)
+	return count
 }
 func ItemHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
@@ -994,9 +989,7 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		var cate Category
 		var subcate Subcategory
 
-		items := item.GetEntity()
 		cates := cate.GetEntity(Pagination{Index: -1})
-
 		// itemID := r.URL.Query().Get("id")
 		cateID := r.URL.Query().Get("cid")
 		subcateID := r.URL.Query().Get("sid")
@@ -1031,16 +1024,42 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
+		page := r.URL.Query().Get("page")
+		pageIndex, err := strconv.Atoi(page)
+		if err != nil {
+			pageIndex = 1
+			glog.Infof("get page index err: %v", err)
+		}
+
+		var pagination Pagination
+		pagination.Index = pageIndex
+		count := item.Count()
+		if count%2 == 0 {
+			pagination.Count = count / 2
+		} else {
+			pagination.Count = count/2 + 1
+		}
+		pagination.Previous = pageIndex - 1
+		pagination.Next = pageIndex + 1
+		if pagination.Index > pagination.Count {
+			pagination.Index -= 1
+		}
+		if pagination.Index < 1 {
+			pagination.Index = 1
+		}
+		items := item.GetEntity(pagination)
 		data := struct {
 			Title         string
 			Items         []Item
 			Categories    []Category
 			Subcategories []Subcategory
+			Pagination    Pagination
 		}{
 			Title:         "Item",
 			Items:         items,
 			Categories:    cates,
 			Subcategories: subcates,
+			Pagination:    pagination,
 		}
 		itemtemplate.Execute(w, data)
 	} else if r.Method == "POST" {
