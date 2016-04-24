@@ -895,6 +895,27 @@ func (item Item) AddEntity() int64 {
 	}
 	return id
 }
+func (item Item) DelEntity() int64 {
+	eitem := item.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("update Item set IsDeleted=1,DeletedTime=?,DeletedBy=? where id=?")
+	if err != nil {
+		glog.Errorf("Category->AddEntity->stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(eitem.OperationEncrypted.DeletedTime, eitem.OperationEncrypted.DeletedBy, eitem.ID)
+	if err != nil {
+		glog.Errorf("Category->AddEntity->exec err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("Category->AddEntity->get lastinsertid err: %v\n", err)
+	}
+	return rowsAffected
+}
 func (item Item) Encrypt() ItemEncrypted {
 	store, err := mtcrypto.AESEncrypt(key, item.Store)
 	if err != nil {
@@ -985,6 +1006,21 @@ func (item Item) Count() (count int) {
 func ItemHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	if r.Method == "GET" {
+		if r.URL.Query().Get("action") == delAction {
+			eid := r.URL.Query().Get("id")
+			id, err := strconv.Atoi(eid)
+			if err != nil {
+				glog.Errorf("convert string %s to int err: %v", eid, err)
+			}
+			var item Item
+			item.ID = id
+			item.Operation.DeletedTime = time.Now().Format(LongFormat)
+			item.Operation.DeletedBy = 0
+			rowsAffected := item.DelEntity()
+			if rowsAffected > 0 {
+				//successful
+			}
+		}
 		var item Item
 		var cate Category
 		var subcate Subcategory

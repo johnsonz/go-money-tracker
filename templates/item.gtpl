@@ -72,6 +72,7 @@
                 <th>Amount</th>
                 <th>Receipt</th>
                 <th>Remark</th>
+                <th colspan="4">Action</th>
             </tr>
             {{range .Items}}
             <tr>
@@ -84,6 +85,10 @@
                 <td>{{.Amount}}</td>
                 <td>{{if .Receipt}}<img class="smallimg" src="data:image/jpg;base64,{{.Receipt}}">{{else}}None{{end}}</td>
                 <td>{{.Remark}}</td>
+                <td><a href="/item?id={{.ID}}" class="btn btn-link">View</td>
+                <td><a href="javascript:" data-toggle="modal" data-target="#Modal" class="btn btn-link edit">Edit</td>
+                <td><a href="/detail?id={{.ID}}" class="btn btn-link">Add</td>
+                <td><a href="/item?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
             </tr>
             {{end}}
         </table>
