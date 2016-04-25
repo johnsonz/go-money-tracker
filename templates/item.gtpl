@@ -60,7 +60,7 @@
         </table>
 
     </div>
-    <div class="wrap-table">
+    <div class="wrap-table-item">
         <table class="table table-striped table-bordered table-hover table-condensed">
             <tr>
                 <th>Index</th>
@@ -68,12 +68,12 @@
                 <th>Subcategory</th>
                 <th>Store</th>
                 <th>Address</th>
-                <th>PurchasedDate</th>
+                <th>P.Date</th>
                 <th>Amount</th>
                 <th>Receipt</th>
                 <th>Remark</th>
-                <th>Created Time</th>
-                <th>Created By</th>
+                <th>C.Time</th>
+                <th>C.By</th>
                 <th colspan="4">Action</th>
             </tr>
             {{if .Items}}{{range .Items}}
@@ -202,7 +202,7 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-default" name="cancel" data-dismiss="modal">Cancel</button>
                     <input type="submit" name="update" value="Update" class="btn btn-primary" />
                 </div>
             </div>

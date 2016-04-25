@@ -12,6 +12,12 @@ body {
     width: 70%;
     padding-left: 10px;
 }
+.wrap-table-item{
+ width:99%;
+}
+.wrap-table-item .btn{
+    padding: 6px 0px;
+}
 .wrap-primary {
     padding-top: 10px;
     padding-bottom: 10px;
