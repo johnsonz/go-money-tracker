@@ -69,28 +69,26 @@ type ItemEncrypted struct {
 	OperationEncrypted
 }
 type Detail struct {
-	ID          int
-	Name        string
-	Price       float64
-	Quantity    int64
-	LabelOne    string
-	LabelTwo    string
-	Remark      string
-	CreatedTime string
-	CreatedBy   int
+	ID       int
+	Name     string
+	Price    float64
+	Quantity int64
+	LabelOne string
+	LabelTwo string
+	Remark   string
 	Item
+	Operation
 }
 type DetailEncrypted struct {
-	ID          int
-	Name        []byte
-	Price       []byte
-	Quantity    []byte
-	LabelOne    []byte
-	LabelTwo    []byte
-	Remark      []byte
-	CreatedTime []byte
-	CreatedBy   int
+	ID       int
+	Name     []byte
+	Price    []byte
+	Quantity []byte
+	LabelOne []byte
+	LabelTwo []byte
+	Remark   []byte
 	ItemEncrypted
+	OperationEncrypted
 }
 type User struct {
 	ID          int
@@ -167,7 +165,7 @@ func init() {
 		Funcs(template.FuncMap{"plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
 		ParseFiles("./templates/item.gtpl", "./templates/main.gtpl"))
 	detailtemplate = template.Must(template.New("detail.gtpl").
-		Funcs(template.FuncMap{"getamount": GetAmount}).
+		Funcs(template.FuncMap{"getamount": GetAmount, "plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
 		ParseFiles("./templates/detail.gtpl", "./templates/main.gtpl"))
 	logintemplate = template.Must(template.New("login.gtpl").
 		ParseFiles("./templates/login.gtpl"))
@@ -1263,16 +1261,16 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/item?sid="+strconv.Itoa(sid)+"&cid="+cateID, http.StatusMovedPermanently)
 	}
 }
-func (detail Detail) GetEntity() []Detail {
+func (detail Detail) GetEntity(pagination Pagination) []Detail {
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
-	stmt, err := db.Prepare("select ID,Name,Price,Quantity,LabelOne,LabelTwo,Remark,CreatedTime,CreatedBy from Detail where IsDeleted=0 and ItemID=?")
+	stmt, err := db.Prepare("select ID,Name,Price,Quantity,LabelOne,LabelTwo,Remark,CreatedTime,CreatedBy from Detail where IsDeleted=0 and ItemID=? limit ? offset ?")
 	if err != nil {
 		glog.Errorf("db prepare err: %v\n", err)
 	}
-	rows, err := stmt.Query(detail.Item.ID)
+	rows, err := stmt.Query(detail.Item.ID, pageSize, pageSize*(pagination.Index-1))
 	if err != nil {
 		glog.Errorf("exec err: %v\n", err)
 	}
@@ -1373,25 +1371,20 @@ func (detail Detail) Encrypt() DetailEncrypted {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", detail.LabelTwo, err)
 	}
-	ctime, err := mtcrypto.AESEncrypt(key, detail.CreatedTime)
-	if err != nil {
-		glog.Errorf("enctypt name %s err: %v", detail.CreatedTime, err)
-	}
 	remark, err := mtcrypto.AESEncrypt(key, detail.Remark)
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", detail.Remark, err)
 	}
 	return DetailEncrypted{
-		ID:            detail.ID,
-		Name:          name,
-		Price:         price,
-		Quantity:      quantity,
-		LabelOne:      labelone,
-		LabelTwo:      labeltwo,
-		Remark:        remark,
-		CreatedTime:   ctime,
-		CreatedBy:     detail.CreatedBy,
-		ItemEncrypted: detail.Item.Encrypt(),
+		ID:                 detail.ID,
+		Name:               name,
+		Price:              price,
+		Quantity:           quantity,
+		LabelOne:           labelone,
+		LabelTwo:           labeltwo,
+		Remark:             remark,
+		OperationEncrypted: detail.Operation.Encryt(),
+		ItemEncrypted:      detail.Item.Encrypt(),
 	}
 }
 func (edetail DetailEncrypted) Decrypt() Detail {
@@ -1423,26 +1416,29 @@ func (edetail DetailEncrypted) Decrypt() Detail {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", edetail.LabelTwo, err)
 	}
-	ctime, err := mtcrypto.AESDecrypt(key, edetail.CreatedTime)
-	if err != nil {
-		glog.Errorf("enctypt name %s err: %v", edetail.CreatedTime, err)
-	}
 	remark, err := mtcrypto.AESDecrypt(key, edetail.Remark)
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", edetail.Remark, err)
 	}
 	return Detail{
-		ID:          edetail.ID,
-		Name:        string(name),
-		Price:       price,
-		Quantity:    quantity,
-		LabelOne:    string(labelone),
-		LabelTwo:    string(labeltwo),
-		CreatedTime: string(ctime),
-		CreatedBy:   edetail.CreatedBy,
-		Remark:      string(remark),
-		Item:        edetail.ItemEncrypted.Decrypt(),
+		ID:        edetail.ID,
+		Name:      string(name),
+		Price:     price,
+		Quantity:  quantity,
+		LabelOne:  string(labelone),
+		LabelTwo:  string(labeltwo),
+		Operation: edetail.OperationEncrypted.Decryt(),
+		Remark:    string(remark),
+		Item:      edetail.ItemEncrypted.Decrypt(),
 	}
+}
+func (detail Detail) Count(iid int) (count int) {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open sqlite err: %v\n", err)
+	}
+	db.QueryRow("select count(*) from Detail where IsDeleted=0 and ItemID=?", iid).Scan(&count)
+	return count
 }
 func DetailHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
@@ -1456,15 +1452,40 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			detail.Item.ID = iid
 		}
-		details := detail.GetEntity()
+		page := r.URL.Query().Get("page")
+		pageIndex, err := strconv.Atoi(page)
+		if err != nil {
+			pageIndex = 1
+			glog.Infof("get page index err: %v", err)
+		}
+
+		var pagination Pagination
+		pagination.Index = pageIndex
+		count := detail.Count(iid)
+		if count%2 == 0 {
+			pagination.Count = count / 2
+		} else {
+			pagination.Count = count/2 + 1
+		}
+		pagination.Previous = pageIndex - 1
+		pagination.Next = pageIndex + 1
+		if pagination.Index > pagination.Count {
+			pagination.Index -= 1
+		}
+		if pagination.Index < 1 {
+			pagination.Index = 1
+		}
+		details := detail.GetEntity(pagination)
 		data := struct {
-			Title   string
-			ItemID  int
-			Details []Detail
+			Title      string
+			ItemID     int
+			Details    []Detail
+			Pagination Pagination
 		}{
-			Title:   "Detail",
-			ItemID:  iid,
-			Details: details,
+			Title:      "Detail",
+			ItemID:     iid,
+			Details:    details,
+			Pagination: pagination,
 		}
 		detailtemplate.Execute(w, data)
 	} else if r.Method == "POST" {
@@ -1572,5 +1593,4 @@ func RemoveReceiptHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fmt.Fprint(w, false)
 	}
-
 }
