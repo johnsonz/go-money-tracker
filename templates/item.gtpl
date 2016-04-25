@@ -25,7 +25,7 @@
             <tr>
                 <td>PurchasedDate:</td>
                 <td>
-                    <input type="text" name="purchaseddate" id="datepicker" />
+                    <input type="text" name="purchaseddate" class="datepicker" />
                 </td>
             </tr>
             <tr>
@@ -72,21 +72,25 @@
                 <th>Amount</th>
                 <th>Receipt</th>
                 <th>Remark</th>
+                <th>Created Time</th>
+                <th>Created By</th>
                 <th colspan="4">Action</th>
             </tr>
             {{if .Items}}{{range .Items}}
             <tr>
-                <td>{{.ID}}</td>
-                <td>{{.Subcategory.Category.Name}}</td>
-                <td>{{.Subcategory.Name}}</td>
-                <td>{{.Store}}</td>
-                <td>{{.Address}}</td>
-                <td>{{.PurchasedDate}}</td>
-                <td>{{.Amount}}</td>
-                <td>{{if .Receipt}}<img class="smallimg" src="data:image/jpg;base64,{{.Receipt}}">{{else}}None{{end}}</td>
-                <td>{{.Remark}}</td>
+                <td><span name="itemid">{{.ID}}</span></td>
+                <td><span name="itemcate">{{.Subcategory.Category.Name}}</span></td>
+                <td><span name="itemsubcate">{{.Subcategory.Name}}</span></td>
+                <td><span name="itemstore">{{.Store}}</span></td>
+                <td><span name="itemaddr">{{.Address}}</span></td>
+                <td><span name="itempurdate">{{.PurchasedDate}}</span></td>
+                <td><span name="itemamount">{{.Amount}}</span></td>
+                <td><span name="itemreceipt">{{if .Receipt}}<img class="smallimg" src="data:image/jpg;base64,{{.Receipt}}">{{else}}None{{end}}</span></td>
+                <td><span name="itemremark">{{.Remark}}</span></td>
+                <td><span name="itemctime">{{.Operation.CreatedTime}}</span></td>
+                <td><span name="itemcby">{{.Operation.CreatedBy}}</span></td>
                 <td><a href="/item?id={{.ID}}" class="btn btn-link">View</td>
-                <td><a href="javascript:" data-toggle="modal" data-target="#Modal" class="btn btn-link edit">Edit</td>
+                <td><a href="javascript:" data-toggle="modal" data-target="#Modal-Item" class="btn btn-link edit">Edit</td>
                 <td><a href="/detail?id={{.ID}}" class="btn btn-link">Add</td>
                 <td><a href="/item?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
             </tr>
@@ -142,6 +146,69 @@
 
             </ul>
         </nav>
+    </div>
+    <input type="text" name="updatedid" id="updatedid"  hidden="hidden">
+    <div class="modal fade" id="Modal-Item" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="ModalLabel">Edit</h4>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <label for="updatedcategory" class="control-label">Category:</label>
+                            <select name="updatedcategory" class="form-control" id="updatedcategory">
+                                {{range .Categories}}
+                                <option value="{{.ID}}" {{if .Selected}}selected="selected" {{end}}>{{.Name}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="updatedsubcategory" class="control-label">Subcategory:</label>
+                            <select name="updatedsubcategory" class="form-control" id="updatedsubcategory">
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="store" class="control-label">Store:</label>
+                            <input type="text" class="form-control" name="updatedstore" id="updatedstore">
+                        </div>
+                        <div class="form-group">
+                            <label for="address" class="control-label">Address:</label>
+                            <input type="text" class="form-control" name="updatedaddress" id="updatedaddress">
+                        </div>
+                        <div class="form-group">
+                            <label for="updatedpurchaseddate" class="control-label">PurchasedDate:</label>
+                            <input type="text" name="updatedpurchaseddate" id="updatedpurchaseddate" class="datepicker form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label for="receipt" class="control-label">Receipt:</label>
+                            <div id="wrapreceip">
+
+                            </div>
+                            <input type="file" class="form-control" name="updatedreceipt" id="purchaseddatereceipt">
+                        </div>
+                        <div class="form-group">
+                            <label for="remark" class="control-label">Remark:</label>
+                            <input type="text" class="form-control" name="purchaseddateremark" id="purchaseddateremark">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdtime" class="control-label">Created Time:</label>
+                            <input type="text" class="form-control" id="createdtime" disabled="disabled">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdby" class="control-label">Created By:</label>
+                            <input type="text" class="form-control" id="createdby" disabled="disabled">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <input type="submit" name="update" value="Update" class="btn btn-primary" />
+                </div>
+            </div>
+        </div>
     </div>
 </form>
 {{template "footer" .}}

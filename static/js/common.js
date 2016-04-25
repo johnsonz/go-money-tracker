@@ -1,18 +1,24 @@
 $(function() {
     //datepicker setting
-    $("#datepicker").datepicker({
+    $(".datepicker").datepicker({
         changeMonth: true,
         changeYear: true,
         dateFormat: "yy-mm-dd"
     });
     //get subcategory when select category
-    $("#category").change(function() {
+    $("#category,#updatedcategory").change(function() {
+        var options = '';
+        var flag = $(this).attr("id");
+
         $.getJSON("/getsubcategory?id=" + $(this).val(), function(data) {
-            var options = '';
             $.each(data, function(key, val) {
                 options += '<option value="' + val.ID + '" >' + val.Name + '</option>';
             });
-            $("#subcategory").html(options);
+            if (flag == "category") {
+                $("#subcategory").html(options);
+            } else {
+                $("#updatedsubcategory").html(options);
+            }
         });
     });
     $(".smallimg").click(function(e) {
@@ -43,11 +49,11 @@ $(function() {
     });
     $('#Modal').on('show.bs.modal', function(event) {
         var element = $(event.relatedTarget) // element that triggered the modal
-        var ep=element.parent().parent();
-        var id=ep.find("span[name='cateid']").html();
-        var name=ep.find("span[name='catename']").html();
-        var time=ep.find("span[name='catectime']").html();
-        var by=ep.find("span[name='catecby']").html();
+        var ep = element.parent().parent();
+        var id = ep.find("span[name='cateid']").html();
+        var name = ep.find("span[name='catename']").html();
+        var time = ep.find("span[name='catectime']").html();
+        var by = ep.find("span[name='catecby']").html();
         var modal = $(this)
         $('#updatedid').val(id);
         modal.find('.modal-body #catename').val(name);
@@ -56,14 +62,51 @@ $(function() {
     });
     $('#Modal-Subcate').on('show.bs.modal', function(event) {
         var element = $(event.relatedTarget) // element that triggered the modal
-        var ep=element.parent().parent();
-        var id=ep.find("span[name='subcateid']").html();
-        var name=ep.find("span[name='subcatename']").html();
-        var time=ep.find("span[name='subcatectime']").html();
-        var by=ep.find("span[name='subcatecby']").html();
+        var ep = element.parent().parent();
+        var id = ep.find("span[name='subcateid']").html();
+        var name = ep.find("span[name='subcatename']").html();
+        var time = ep.find("span[name='subcatectime']").html();
+        var by = ep.find("span[name='subcatecby']").html();
         var modal = $(this)
         $('#updatedid').val(id);
         modal.find('.modal-body #subcatename').val(name);
+        modal.find('.modal-body #createdtime').val(time);
+        modal.find('.modal-body #createdby').val(by);
+    });
+    $('#Modal-Item').on('show.bs.modal', function(event) {
+        var element = $(event.relatedTarget) // element that triggered the modal
+        var ep = element.parent().parent();
+
+        var id = ep.find("span[name='itemid']").html();
+        var cate = ep.find("span[name='itemcate']").html();
+        var subcate = ep.find("span[name='itemsubcate']").html();
+        var store = ep.find("span[name='itemstore']").html();
+        var addr = ep.find("span[name='itemaddr']").html();
+        var pur = ep.find("span[name='itempurdate']").html();
+        var amount = ep.find("span[name='itemamount']").html();
+        var receipt = ep.find("span[name='itemreceipt']").html();
+        var remark = ep.find("span[name='itemremark']").html();
+        var time = ep.find("span[name='itemctime']").html();
+        var by = ep.find("span[name='itemcby']").html();
+        var modal = $(this)
+        $('#updatedid').val(id);
+        modal.find('.modal-body #updatedcategory').find("option[text='" + cate + "']").attr("selected", true);
+        var cateid = modal.find('.modal-body #updatedcategory').val();
+        $.getJSON("/getsubcategory?id=" + cateid, function(data) {
+            var options = '';
+            $.each(data, function(key, val) {
+                options += '<option value="' + val.ID + '" >' + val.Name + '</option>';
+            });
+            $("#updatedsubcategory").html(options);
+            modal.find('.modal-body #updatedsubcategory').find("option[text='" + subcate + "']").attr("selected", true);
+        });
+
+        modal.find('.modal-body #updatedstore').val(store);
+        modal.find('.modal-body #updatedaddress').val(addr);
+        modal.find('.modal-body #updatedpurchaseddate').val(pur);
+        //modal.find('.modal-body #purchaseddatereceipt').val(amount);
+        modal.find('.modal-body #wrapreceip').html(receipt);
+        modal.find('.modal-body #purchaseddateremark').val(remark);
         modal.find('.modal-body #createdtime').val(time);
         modal.find('.modal-body #createdby').val(by);
     });

@@ -916,6 +916,67 @@ func (item Item) DelEntity() int64 {
 	}
 	return rowsAffected
 }
+func (item Item) UpdEntity() int64 {
+	var stmt *sql.Stmt
+	var res sql.Result
+	var err error
+	eitem := item.Encrypt()
+
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Item->AddEntity->open db err: %v\n", err)
+	}
+	defer db.Close()
+	if len(item.Receipt) > 0 {
+		stmt, err = db.Prepare("update Item set Store=?,Address=?,PurchasedDate=?,ReceiptImage=?,Remark=?,UpdatedTime=?,UpdatedBy=?,SubcategoryID=? where id=?")
+		if err != nil {
+			glog.Errorf("Item->AddEntity->stmt err: %v\n", err)
+		}
+		res, err = stmt.Exec(eitem.Store, eitem.Address, eitem.PurchasedDate, eitem.Receipt,
+			eitem.Remark, eitem.OperationEncrypted.UpdatedTime, eitem.OperationEncrypted.UpdatedBy,
+			eitem.SubcategoryEncrypted.ID, eitem.ID)
+		if err != nil {
+			glog.Errorf("Item->AddEntity->exec err: %v\n", err)
+		}
+	} else {
+		stmt, err = db.Prepare("update Item set Store=?,Address=?,PurchasedDate=?,Remark=?,UpdatedTime=?,UpdatedBy=?,SubcategoryID=? where id=?")
+		if err != nil {
+			glog.Errorf("Item->AddEntity->stmt err: %v\n", err)
+		}
+		res, err = stmt.Exec(eitem.Store, eitem.Address, eitem.PurchasedDate,
+			eitem.Remark, eitem.OperationEncrypted.UpdatedTime, eitem.OperationEncrypted.UpdatedBy,
+			eitem.SubcategoryEncrypted.ID, eitem.ID)
+		if err != nil {
+			glog.Errorf("Item->AddEntity->exec err: %v\n", err)
+		}
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("Item->AddEntity->get LastInsertId err: %v\n", err)
+	}
+	return rowsAffected
+}
+func (item Item) RemoveRceipt() int64 {
+	eitem := item.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("update Item set ReceiptImage='',UpdatedTime=?,UpdatedBy=? where id=?")
+	if err != nil {
+		glog.Errorf("Category->AddEntity->stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(eitem.OperationEncrypted.UpdatedTime, eitem.OperationEncrypted.UpdatedBy, eitem.ID)
+	if err != nil {
+		glog.Errorf("Category->AddEntity->exec err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("Category->AddEntity->get lastinsertid err: %v\n", err)
+	}
+	return rowsAffected
+}
 func (item Item) Encrypt() ItemEncrypted {
 	store, err := mtcrypto.AESEncrypt(key, item.Store)
 	if err != nil {
@@ -1099,52 +1160,105 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		itemtemplate.Execute(w, data)
 	} else if r.Method == "POST" {
-		cateID := r.FormValue("category")
 		subcateID := r.FormValue("subcategory")
-		purchasedDate := r.FormValue("purchaseddate")
-		store := r.FormValue("store")
-		address := r.FormValue("address")
-		remark := r.FormValue("remark")
-		file, _, err := r.FormFile("receiptimage")
-		var receiptData []byte
-		switch err {
-		case nil:
-			receiptData, err = ioutil.ReadAll(file)
-			if err != nil {
-				glog.Errorf("read file err: %v\n", err)
-			}
-			// receiptData, err = base64.StdEncoding.DecodeString(string(receiptData))
-			// if err != nil {
-			// 	glog.Errorf("convert file to base64 err: %v\n", err)
-			// }
-		case http.ErrMissingFile:
-			glog.Infof("no file uploaded \n")
-		default:
-			glog.Errorf("upload file err: %v\n", err)
-		}
+		cateID := r.FormValue("category")
 		sid, err := strconv.Atoi(subcateID)
 		if err != nil {
 			glog.Errorf("convert sid to int err； %v \n", err)
 		}
-		_, err = time.Parse(ShortFormat, purchasedDate)
-		if err != nil {
-			glog.Errorf("parse purchased date %s err: %v\n", purchasedDate, err)
-		}
-		var item Item
-		item.Subcategory.ID = sid
-		item.PurchasedDate = purchasedDate
-		item.Receipt = string(receiptData)
-		item.Store = store
-		item.Address = address
-		item.Remark = remark
-		item.CreatedTime = time.Now().Format(LongFormat)
-		item.CreatedBy = 0
+		if r.FormValue("update") == "Update" {
+			itemID := r.FormValue("updatedid")
+			id, err := strconv.Atoi(itemID)
+			if err != nil {
+				glog.Errorf("convert string %s to int err: %v", itemID, err)
+			}
+			// ucate := r.FormValue("updatedcategory")
+			// cid, err := strconv.Atoi(ucate)
+			// if err != nil {
+			// 	glog.Errorf("convert string %s to int err: %v", ucate, err)
+			// }
+			usubcate := r.FormValue("updatedsubcategory")
+			sid, err := strconv.Atoi(usubcate)
+			if err != nil {
+				glog.Errorf("convert string %s to int err: %v", usubcate, err)
+			}
+			ustore := r.FormValue("updatedstore")
+			uaddr := r.FormValue("updatedaddress")
+			upurdate := r.FormValue("updatedpurchaseddate")
+			file, _, err := r.FormFile("updatedreceipt")
+			var receiptData []byte
+			switch err {
+			case nil:
+				receiptData, err = ioutil.ReadAll(file)
+				if err != nil {
+					glog.Errorf("read file err: %v\n", err)
+				}
+				// receiptData, err = base64.StdEncoding.DecodeString(string(receiptData))
+				// if err != nil {
+				// 	glog.Errorf("convert file to base64 err: %v\n", err)
+				// }
+			case http.ErrMissingFile:
+				glog.Infof("no file uploaded \n")
+			default:
+				glog.Errorf("upload file err: %v\n", err)
+			}
+			uremark := r.FormValue("purchaseddateremark")
 
-		lastInsertId := item.AddEntity()
-		if lastInsertId > -1 {
-			//insert successful
+			var item Item
+			item.ID = id
+			item.Subcategory.ID = sid
+			item.Store = ustore
+			item.Address = uaddr
+			item.PurchasedDate = upurdate
+			item.Receipt = string(receiptData)
+			item.Remark = uremark
+			item.Operation.UpdatedTime = time.Now().Format(LongFormat)
+			item.Operation.UpdatedBy = 0
+			item.UpdEntity()
+		} else {
+
+			purchasedDate := r.FormValue("purchaseddate")
+			store := r.FormValue("store")
+			address := r.FormValue("address")
+			remark := r.FormValue("remark")
+			file, _, err := r.FormFile("receiptimage")
+			var receiptData []byte
+			switch err {
+			case nil:
+				receiptData, err = ioutil.ReadAll(file)
+				if err != nil {
+					glog.Errorf("read file err: %v\n", err)
+				}
+				// receiptData, err = base64.StdEncoding.DecodeString(string(receiptData))
+				// if err != nil {
+				// 	glog.Errorf("convert file to base64 err: %v\n", err)
+				// }
+			case http.ErrMissingFile:
+				glog.Infof("no file uploaded \n")
+			default:
+				glog.Errorf("upload file err: %v\n", err)
+			}
+
+			_, err = time.Parse(ShortFormat, purchasedDate)
+			if err != nil {
+				glog.Errorf("parse purchased date %s err: %v\n", purchasedDate, err)
+			}
+			var item Item
+			item.Subcategory.ID = sid
+			item.PurchasedDate = purchasedDate
+			item.Receipt = string(receiptData)
+			item.Store = store
+			item.Address = address
+			item.Remark = remark
+			item.CreatedTime = time.Now().Format(LongFormat)
+			item.CreatedBy = 0
+
+			lastInsertId := item.AddEntity()
+			if lastInsertId > -1 {
+				//insert successful
+			}
 		}
-		http.Redirect(w, r, "/item?id="+strconv.Itoa(int(lastInsertId))+"&sid="+strconv.Itoa(sid)+"&cid="+cateID, http.StatusMovedPermanently)
+		http.Redirect(w, r, "/item?sid="+strconv.Itoa(sid)+"&cid="+cateID, http.StatusMovedPermanently)
 	}
 }
 func (detail Detail) GetEntity() []Detail {
@@ -1439,4 +1553,22 @@ func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 }
 func GetAmount(price float64, quantity int64) float64 {
 	return price * float64(quantity)
+}
+func RemoveReceipt(w http.ResponseWriter, r *http.Request) {
+	CheckSessions(w, r)
+	var item Item
+	itemID := r.FormValue("id")
+	id, err := strconv.Atoi(itemID)
+	if err != nil {
+		glog.Errorf("err :%v", err)
+	}
+	item.ID = id
+	item.Operation.UpdatedTime = time.Now().Format(LongFormat)
+	item.Operation.UpdatedBy = 0
+	if item.RemoveRceipt() > 0 {
+		fmt.Fprint(w, true)
+	} else {
+		fmt.Fprint(w, false)
+	}
+
 }
