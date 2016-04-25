@@ -105,7 +105,23 @@ $(function() {
         modal.find('.modal-body #updatedaddress').val(addr);
         modal.find('.modal-body #updatedpurchaseddate').val(pur);
         //modal.find('.modal-body #purchaseddatereceipt').val(amount);
-        modal.find('.modal-body #wrapreceip').html(receipt);
+        if (receipt != "None") {
+            var remove = '<input type="button" value="Remove" class="btn btn-default btn-xs" id="rmRept"/>';
+            modal.find('.modal-body #wrapreceip').html(receipt + remove);
+        } else {
+            modal.find('.modal-body #wrapreceip').html('');
+        }
+        $("#rmRept").click(function() {
+            $.post("/rmrept",
+                {
+                    id: id
+                },
+                function(data, status) {
+                    if(data){
+                        modal.find('.modal-body #wrapreceip').html('');
+                    }
+                });
+        });
         modal.find('.modal-body #purchaseddateremark').val(remark);
         modal.find('.modal-body #createdtime').val(time);
         modal.find('.modal-body #createdby').val(by);

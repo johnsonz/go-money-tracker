@@ -184,9 +184,7 @@
                         </div>
                         <div class="form-group">
                             <label for="receipt" class="control-label">Receipt:</label>
-                            <div id="wrapreceip">
-
-                            </div>
+                            <div id="wrapreceip"></div>
                             <input type="file" class="form-control" name="updatedreceipt" id="purchaseddatereceipt">
                         </div>
                         <div class="form-group">

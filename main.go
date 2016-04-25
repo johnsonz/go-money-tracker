@@ -182,6 +182,8 @@ func main() {
 	http.HandleFunc("/getsubcategory", GetSubcategoryHandler)
 	http.HandleFunc("/item", ItemHandler)
 	http.HandleFunc("/detail", DetailHandler)
+	http.HandleFunc("/rmrept", RemoveReceiptHandler)
+
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	err := http.ListenAndServe(":8888", context.ClearHandler(http.DefaultServeMux)) //设置监听的端口
 	if err != nil {
@@ -1554,7 +1556,7 @@ func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 func GetAmount(price float64, quantity int64) float64 {
 	return price * float64(quantity)
 }
-func RemoveReceipt(w http.ResponseWriter, r *http.Request) {
+func RemoveReceiptHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	var item Item
 	itemID := r.FormValue("id")
