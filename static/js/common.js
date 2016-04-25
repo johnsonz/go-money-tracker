@@ -119,6 +119,7 @@ $(function() {
                 function(data, status) {
                     if(data){
                         modal.find('.modal-body #wrapreceip').html('');
+                        ep.find("span[name='itemreceipt']").html('None');
                     }
                 });
         });
