@@ -89,9 +89,9 @@
                 <td><span name="itemremark">{{.Remark}}</span></td>
                 <td><span name="itemctime">{{.Operation.CreatedTime}}</span></td>
                 <td><span name="itemcby">{{.Operation.CreatedBy}}</span></td>
-                <td><a href="/item?id={{.ID}}" class="btn btn-link">View</td>
+                <td><a href="/detail?iid={{.ID}}" class="btn btn-link">View</td>
                 <td><a href="javascript:" data-toggle="modal" data-target="#Modal-Item" class="btn btn-link edit">Edit</td>
-                <td><a href="/detail?id={{.ID}}" class="btn btn-link">Add</td>
+                <td><a href="/detail?iid={{.ID}}" class="btn btn-link">Add</td>
                 <td><a href="/item?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
             </tr>
             {{end}}

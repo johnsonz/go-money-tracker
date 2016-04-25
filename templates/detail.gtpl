@@ -59,6 +59,7 @@
                     <th>LabelOne</th>
                     <th>LabelTwo</th>
                     <th>Remark</th>
+                    <th colspan="2">Action</th>
                 </tr>
                 {{range .Details}}
                 <tr>
@@ -70,6 +71,8 @@
                     <td>{{if .LabelOne}}<img class="smallimg" src="data:image/jpg;base64,{{.LabelOne}}">{{else}}None{{end}}</td>
                     <td>{{if .LabelTwo}}<img class="smallimg" src="data:image/jpg;base64,{{.LabelTwo}}">{{else}}None{{end}}</td>
                     <td>{{.Remark}}</td>
+                    <td><a href="javascript:" data-toggle="modal" data-target="#Modal-Detail" class="btn btn-link edit">Edit</td>
+                    <td><a href="/detail?id={{.ID}}&iid={{$.ItemID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
                 </tr>
                 {{end}}
             </table>

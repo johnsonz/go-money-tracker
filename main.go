@@ -1350,6 +1350,78 @@ func (detail Detail) AddEntity() int64 {
 	}
 	return id
 }
+func (detail Detail) DelEntity() int64 {
+	edetail := detail.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open db err: %v\n", err)
+	}
+	////transaction begin
+	tx, err := db.Begin()
+	if err != nil {
+		glog.Errorf("tx begin err: %v\n", err)
+	}
+	//delete detail
+	stmt, err := tx.Prepare("update Detail set IsDeleted=1,DeletedTime=?,DeletedBy=? where id=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(edetail.OperationEncrypted.DeletedTime,
+		edetail.OperationEncrypted.DeletedBy, edetail.ID)
+	if err != nil {
+		glog.Errorf("exec err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("get LastInsertId err: %v\n", err)
+	}
+	//retrive amount from item
+	var eitem ItemEncrypted
+	stmt, err = tx.Prepare("select ItemID,Price,Quantity from Detail where id=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	rows, err := stmt.Query(edetail.ID)
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	for rows.Next() {
+		rows.Scan(&edetail.ItemEncrypted.ID, &edetail.Price, &edetail.Quantity)
+	}
+	stmt, err = tx.Prepare("select Amount from Item where ID=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	err = stmt.QueryRow(edetail.ItemEncrypted.ID).Scan(&eitem.Amount)
+	switch {
+	case err == sql.ErrNoRows:
+		glog.Infof("no row err: %v\n", err)
+	case err != nil:
+		glog.Errorf("get item amount err: %v\n", err)
+	default:
+		//
+	}
+	item := eitem.Decrypt()
+	detail = edetail.Decrypt()
+	//update amount
+	item.Amount = item.Amount - GetAmount(detail.Price, detail.Quantity)
+	stmt, err = tx.Prepare("update Item set Amount=? where ID=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	res, err = stmt.Exec(item.Encrypt().Amount, detail.Item.ID)
+	if err != nil {
+		glog.Errorf("exec err: %v\n", err)
+	}
+	//transaction commit
+	err = tx.Commit()
+	if err != nil {
+		rowsAffected = -1
+		glog.Errorf("tx commit err: %v\n", err)
+		tx.Rollback()
+	}
+	return rowsAffected
+}
 func (detail Detail) Encrypt() DetailEncrypted {
 	name, err := mtcrypto.AESEncrypt(key, detail.Name)
 	if err != nil {
@@ -1443,7 +1515,22 @@ func (detail Detail) Count(iid int) (count int) {
 func DetailHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	if r.Method == "GET" {
-		itemID := r.URL.Query().Get("id")
+		if r.URL.Query().Get("action") == delAction {
+			detailID := r.URL.Query().Get("id")
+			var detail Detail
+			id, err := strconv.Atoi(detailID)
+			if err != nil {
+				glog.Errorf("get detail by item id err: %v", err)
+			}
+			detail.ID = id
+			detail.Operation.DeletedTime = time.Now().Format(LongFormat)
+			detail.Operation.DeletedBy = 0
+			rowsAffected := detail.DelEntity()
+			if rowsAffected > 0 {
+				//successful
+			}
+		}
+		itemID := r.URL.Query().Get("iid")
 		var detail Detail
 		iid, err := strconv.Atoi(itemID)
 		if err != nil {
@@ -1553,7 +1640,8 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 		if lastInsertId > 0 {
 			//insert successful
 		}
-		http.Redirect(w, r, "/detail?id="+itemid, http.StatusMovedPermanently)
+
+		http.Redirect(w, r, "/detail?iid="+itemid, http.StatusMovedPermanently)
 	}
 }
 func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
