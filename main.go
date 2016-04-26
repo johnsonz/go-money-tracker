@@ -137,6 +137,7 @@ var itemtemplate *template.Template
 var detailtemplate *template.Template
 var logintemplate *template.Template
 var store *sessions.CookieStore
+var templates *template.Template
 
 const (
 	dbDrive     = "sqlite3"
@@ -155,20 +156,9 @@ const (
 
 func init() {
 	flag.Parse()
-	categorytemplate = template.Must(template.New("category.gtpl").
-		Funcs(template.FuncMap{"plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
-		ParseFiles("./templates/category.gtpl", "./templates/main.gtpl"))
-	subcategorytemplate = template.Must(template.New("subcategory.gtpl").
-		Funcs(template.FuncMap{"plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
-		ParseFiles("./templates/subcategory.gtpl", "./templates/main.gtpl"))
-	itemtemplate = template.Must(template.New("item.gtpl").
-		Funcs(template.FuncMap{"plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
-		ParseFiles("./templates/item.gtpl", "./templates/main.gtpl"))
-	detailtemplate = template.Must(template.New("detail.gtpl").
+	templates = template.Must(template.New("templates").
 		Funcs(template.FuncMap{"getamount": GetAmount, "plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
-		ParseFiles("./templates/detail.gtpl", "./templates/main.gtpl"))
-	logintemplate = template.Must(template.New("login.gtpl").
-		ParseFiles("./templates/login.gtpl"))
+		ParseGlob("./templates/*.gtpl"))
 	store = sessions.NewCookieStore([]byte(sessionsKey))
 	glog.Infoln("initial done")
 }
@@ -304,7 +294,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			Username: "",
 			HasError: "",
 		}
-		logintemplate.Execute(w, data)
+		// logintemplate.Execute(w, data)
+		templates.ExecuteTemplate(w, "login.gtpl", data)
 	} else {
 		username := r.FormValue("username")
 		password := r.FormValue("password")
@@ -351,7 +342,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			Username: username,
 			HasError: "has-error",
 		}
-		logintemplate.Execute(w, data)
+		// logintemplate.Execute(w, data)
+		templates.ExecuteTemplate(w, "login.gtpl", data)
 	}
 }
 func (op Operation) Encryt() OperationEncrypted {
@@ -566,7 +558,8 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 			Categories: cates,
 			Pagination: pagination,
 		}
-		categorytemplate.Execute(w, data)
+		// categorytemplate.Execute(w, data)
+		templates.ExecuteTemplate(w, "category.gtpl", data)
 	} else if r.Method == "POST" {
 		pageIndex := r.FormValue("pageIndex")
 		if r.FormValue("update") == "Update" {
@@ -802,7 +795,8 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 			Pagination:    pagination,
 			CategoryId:    subcate.Category.ID,
 		}
-		subcategorytemplate.Execute(w, data)
+		// subcategorytemplate.Execute(w, data)
+		templates.ExecuteTemplate(w, "subcategory.gtpl", data)
 	} else if r.Method == "POST" {
 		cateIDForm := r.FormValue("category")
 		cateID, err := strconv.Atoi(cateIDForm)
@@ -1159,7 +1153,8 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 			Subcategories: subcates,
 			Pagination:    pagination,
 		}
-		itemtemplate.Execute(w, data)
+		// itemtemplate.Execute(w, data)
+		templates.ExecuteTemplate(w, "item.gtpl", data)
 	} else if r.Method == "POST" {
 		subcateID := r.FormValue("subcategory")
 		cateID := r.FormValue("category")
@@ -1697,7 +1692,8 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 			Details:    details,
 			Pagination: pagination,
 		}
-		detailtemplate.Execute(w, data)
+		// detailtemplate.Execute(w, data)
+		templates.ExecuteTemplate(w, "detail.gtpl", data)
 	} else if r.Method == "POST" {
 		itemid := r.FormValue("itemid")
 		if r.FormValue("update") == "Update" {
