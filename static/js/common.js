@@ -112,12 +112,11 @@ $(function() {
             modal.find('.modal-body #wrapreceip').html('');
         }
         $("#rmRept").click(function() {
-            $.post("/rmrept",
-                {
+            $.post("/rmrept", {
                     id: id
                 },
                 function(data, status) {
-                    if(data){
+                    if (data) {
                         modal.find('.modal-body #wrapreceip').html('');
                         ep.find("span[name='itemreceipt']").html('None');
                     }
@@ -126,6 +125,69 @@ $(function() {
         modal.find('.modal-body #purchaseddateremark').val(remark);
         modal.find('.modal-body #createdtime').val(time);
         modal.find('.modal-body #createdby').val(by);
+    });
+    $('#Modal-Detail').on('show.bs.modal', function(event) {
+        var element = $(event.relatedTarget) // element that triggered the modal
+        var ep = element.parent().parent();
+
+        var id = ep.find("span[name='detailid']").html();
+        var name = ep.find("span[name='detailname']").html();
+        var price = ep.find("span[name='detailprice']").html();
+        var quan = ep.find("span[name='detailquan']").html();
+        var amount = ep.find("span[name='detailamount']").html();
+        var lone = ep.find("span[name='detaillone']").html();
+        var ltwo = ep.find("span[name='detailltwo']").html();
+        var remark = ep.find("span[name='detailremark']").html();
+        var time = ep.find("span[name='detailctime']").html();
+        var by = ep.find("span[name='detailcby']").html();
+
+        var modal = $(this)
+        $('#updatedid').val(id);
+        modal.find('.modal-body #updatedname').val(name);
+        modal.find('.modal-body #updatedprice').val(price);
+        modal.find('.modal-body #updatedquantity').val(quan);
+        modal.find('.modal-body #updatedamount').val(amount);
+        // modal.find('.modal-body #updatedlone').val(lone);
+        // modal.find('.modal-body #updatedlone').val(ltwo);
+        modal.find('.modal-body #updatedremark').val(remark);
+        modal.find('.modal-body #createdtime').val(time);
+        modal.find('.modal-body #createdby').val(by);
+        if (lone != "None") {
+            var remove = '<input type="button" value="Remove" class="btn btn-default btn-xs" id="rmlOne"/>';
+            modal.find('.modal-body #wraplone').html(lone + remove);
+        } else {
+            modal.find('.modal-body #wraplone').html('');
+        }
+        $("#rmlOne").click(function() {
+            $.post("/rmlabel", {
+                    label: "1",
+                    id: id
+                },
+                function(data, status) {
+                    if (data) {
+                        modal.find('.modal-body #wraplone').html('');
+                        ep.find("span[name='detaillone']").html('None');
+                    }
+                });
+        });
+        if (ltwo != "None") {
+            var remove = '<input type="button" value="Remove" class="btn btn-default btn-xs" id="rmlTwo"/>';
+            modal.find('.modal-body #wrapltwo').html(ltwo + remove);
+        } else {
+            modal.find('.modal-body #wrapltwo').html('');
+        }
+        $("#rmlTwo").click(function() {
+            $.post("/rmlabel", {
+                    label: "2",
+                    id: id
+                },
+                function(data, status) {
+                    if (data) {
+                        modal.find('.modal-body #wrapltwo').html('');
+                        ep.find("span[name='detailltwo']").html('None');
+                    }
+                });
+        });
     });
     setActiveNav();
 });

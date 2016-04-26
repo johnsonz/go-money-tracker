@@ -59,18 +59,22 @@
                     <th>LabelOne</th>
                     <th>LabelTwo</th>
                     <th>Remark</th>
+                    <th>Created Time</th>
+                    <th>Created By</th>
                     <th colspan="2">Action</th>
                 </tr>
                 {{range .Details}}
                 <tr>
-                    <td>{{.ID}}</td>
-                    <td>{{.Name}}</td>
-                    <td>{{.Price}}</td>
-                    <td>{{.Quantity}}</td>
-                    <td>{{getamount .Price .Quantity}}</td>
-                    <td>{{if .LabelOne}}<img class="smallimg" src="data:image/jpg;base64,{{.LabelOne}}">{{else}}None{{end}}</td>
-                    <td>{{if .LabelTwo}}<img class="smallimg" src="data:image/jpg;base64,{{.LabelTwo}}">{{else}}None{{end}}</td>
-                    <td>{{.Remark}}</td>
+                    <td><span name="detailid">{{.ID}}</span></td>
+                    <td><span name="detailname">{{.Name}}</span></td>
+                    <td><span name="detailprice">{{.Price}}</span></td>
+                    <td><span name="detailquan">{{.Quantity}}</span></td>
+                    <td><span name="detailamount">{{getamount .Price .Quantity}}</span></td>
+                    <td><span name="detaillone">{{if .LabelOne}}<img class="smallimg" src="data:image/jpg;base64,{{.LabelOne}}">{{else}}None{{end}}</span></td>
+                    <td><span name="detailltwo">{{if .LabelTwo}}<img class="smallimg" src="data:image/jpg;base64,{{.LabelTwo}}">{{else}}None{{end}}</span></td>
+                    <td><span name="detailremark">{{.Remark}}</td>
+                    <td><span name="detailctime">{{.Operation.CreatedTime}}</span></td>
+                    <td><span name="detailcby">{{.Operation.CreatedBy}}</span></td>
                     <td><a href="javascript:" data-toggle="modal" data-target="#Modal-Detail" class="btn btn-link edit">Edit</td>
                     <td><a href="/detail?id={{.ID}}&iid={{$.ItemID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
                 </tr>
@@ -116,6 +120,63 @@
 
                 </ul>
             </nav>
+        </div>
+        <input type="text" name="updatedid" id="updatedid"  hidden="hidden">
+        <div class="modal fade" id="Modal-Detail" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="ModalLabel">Edit</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="form-group">
+                                <label for="updatedname" class="control-label">Name:</label>
+                                <input type="text" class="form-control" name="updatedname" id="updatedname">
+                            </div>
+                            <div class="form-group">
+                                <label for="updatedprice" class="control-label">Price:</label>
+                                <input type="number" step="0.01" min="0" class="form-control" name="updatedprice" id="updatedprice">
+                            </div>
+                            <div class="form-group">
+                                <label for="updatedquantity" class="control-label">Quantity:</label>
+                                <input type="number" step="1" min="0" name="updatedquantity" id="updatedquantity" class="datepicker form-control" />
+                            </div>
+                            <div class="form-group">
+                                <label for="updatedamount" class="control-label">Amount:</label>
+                                <input type="text" class="form-control" name="updatedamount" id="updatedamount" disabled="disable">
+                            </div>
+                            <div class="form-group">
+                                <label for="updatedlone" class="control-label">LabelOne:</label>
+                                <div id="wraplone"></div>
+                                <input type="file" class="form-control" name="updatedlone" id="updatedlone">
+                            </div>
+                            <div class="form-group">
+                                <label for="updatedltwo" class="control-label">LabelTwo:</label>
+                                <div id="wrapltwo"></div>
+                                <input type="file" class="form-control" name="updatedltwo" id="updatedltwo">
+                            </div>
+                            <div class="form-group">
+                                <label for="updatedremark" class="control-label">Remark:</label>
+                                <input type="text" class="form-control" name="updatedremark" id="updatedremark">
+                            </div>
+                            <div class="form-group">
+                                <label for="createdtime" class="control-label">Created Time:</label>
+                                <input type="text" class="form-control" id="createdtime" disabled="disabled">
+                            </div>
+                            <div class="form-group">
+                                <label for="createdby" class="control-label">Created By:</label>
+                                <input type="text" class="form-control" id="createdby" disabled="disabled">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" name="cancel" data-dismiss="modal">Cancel</button>
+                        <input type="submit" name="update" value="Update" class="btn btn-primary" />
+                    </div>
+                </div>
+            </div>
         </div>
     </form>
 {{template "footer" .}}

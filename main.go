@@ -181,6 +181,7 @@ func main() {
 	http.HandleFunc("/item", ItemHandler)
 	http.HandleFunc("/detail", DetailHandler)
 	http.HandleFunc("/rmrept", RemoveReceiptHandler)
+	http.HandleFunc("/rmlabel", RemoveLabelHandler)
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	err := http.ListenAndServe(":8888", context.ClearHandler(http.DefaultServeMux)) //设置监听的端口
@@ -1422,6 +1423,128 @@ func (detail Detail) DelEntity() int64 {
 	}
 	return rowsAffected
 }
+func (detail Detail) UpdEntity() int64 {
+	edetail := detail.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open db err: %v\n", err)
+	}
+	//transaction begin
+	tx, err := db.Begin()
+	if err != nil {
+		glog.Errorf("tx begin err: %v\n", err)
+	}
+	//retrive price and quantity
+	var edetail_old DetailEncrypted
+	stmt, err := tx.Prepare("select ID,ItemID,Price,Quantity from Detail where id=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	err = stmt.QueryRow(edetail.ID).Scan(&edetail_old.ID, &edetail_old.ItemEncrypted.ID,
+		&edetail_old.Price, &edetail_old.Quantity)
+	if err != nil {
+		glog.Errorf("stmt.QueryRow err: %v\n", err)
+	}
+	detail_old := edetail_old.Decrypt()
+	//update detail
+	sqlstr := "update Detail set Name=?,Price=?,Quantity=?,Remark=?,UpdatedTime=?,UpdatedBy=? "
+	if len(detail.LabelOne) > 0 {
+		sqlstr += ",LabelOne=? "
+	}
+	if len(detail.LabelTwo) > 0 {
+		sqlstr += ",LabelTwo=? "
+	}
+	sqlstr += " where id=?"
+	stmt, err = tx.Prepare(sqlstr)
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	var res sql.Result
+	//var err error
+	if len(detail.LabelOne) > 0 && len(detail.LabelTwo) > 0 {
+		res, err = stmt.Exec(edetail.Name, edetail.Price, edetail.Quantity, edetail.Remark,
+			edetail.OperationEncrypted.UpdatedTime, edetail.OperationEncrypted.UpdatedBy,
+			edetail.LabelOne, edetail.LabelTwo, edetail.ID)
+	} else if len(detail.LabelOne) > 0 {
+		res, err = stmt.Exec(edetail.Name, edetail.Price, edetail.Quantity, edetail.Remark,
+			edetail.OperationEncrypted.UpdatedTime, edetail.OperationEncrypted.UpdatedBy,
+			edetail.LabelOne, edetail.ID)
+	} else if len(detail.LabelTwo) > 0 {
+		res, err = stmt.Exec(edetail.Name, edetail.Price, edetail.Quantity, edetail.Remark,
+			edetail.OperationEncrypted.UpdatedTime, edetail.OperationEncrypted.UpdatedBy,
+			edetail.LabelTwo, edetail.ID)
+	}
+
+	if err != nil {
+		glog.Errorf("stmt.Exec err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("get LastInsertId err: %v\n", err)
+	}
+	//retrive amount from Item
+	var eitem ItemEncrypted
+	stmt, err = tx.Prepare("select Amount from Item where ID=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	err = stmt.QueryRow(detail_old.Item.ID).Scan(&eitem.Amount)
+	switch {
+	case err == sql.ErrNoRows:
+		glog.Infof("no row err: %v\n", err)
+	case err != nil:
+		glog.Errorf("get item amount err: %v\n", err)
+	default:
+		//
+	}
+	//update amount
+	item := eitem.Decrypt()
+	item.Amount = item.Amount - GetAmount(detail_old.Price, detail_old.Quantity) + GetAmount(detail.Price, detail.Quantity)
+	stmt, err = tx.Prepare("update Item set Amount=? where ID=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	res, err = stmt.Exec(item.Encrypt().Amount, detail_old.Item.ID)
+	if err != nil {
+		glog.Errorf("exec err: %v\n", err)
+	}
+	//transaction commit
+	err = tx.Commit()
+	if err != nil {
+		rowsAffected = -1
+		glog.Errorf("tx commit err: %v\n", err)
+		tx.Rollback()
+	}
+
+	return rowsAffected
+}
+func (detail Detail) RemoveLabel(label string) int64 {
+	edetail := detail.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
+	}
+	defer db.Close()
+	sqlstr := "update Detail set UpdatedTime=?,UpdatedBy=? "
+	if label == "1" {
+		sqlstr += ",LabelOne=''  where id=?"
+	} else if label == "2" {
+		sqlstr += ",LabelTwo=''  where id=?"
+	}
+	stmt, err := db.Prepare(sqlstr)
+	if err != nil {
+		glog.Errorf("Category->AddEntity->stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(edetail.OperationEncrypted.UpdatedTime, edetail.OperationEncrypted.UpdatedBy, edetail.ID)
+	if err != nil {
+		glog.Errorf("Category->AddEntity->exec err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("Category->AddEntity->get lastinsertid err: %v\n", err)
+	}
+	return rowsAffected
+}
 func (detail Detail) Encrypt() DetailEncrypted {
 	name, err := mtcrypto.AESEncrypt(key, detail.Name)
 	if err != nil {
@@ -1576,71 +1699,129 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		detailtemplate.Execute(w, data)
 	} else if r.Method == "POST" {
-		var detail Detail
 		itemid := r.FormValue("itemid")
-		iid, err := strconv.Atoi(itemid)
-		if err != nil {
-			glog.Fatalf("get item id %s err: %v", itemid, err)
-		}
-		detail.Item.ID = iid
-		name := r.FormValue("name")
-		detail.Name = name
-		price := r.FormValue("price")
-		pri, err := strconv.ParseFloat(price, 64)
-		if err != nil {
-			detail.Price = 0.0
-			glog.Errorf("parse float %s err: %v", price, err)
-		} else {
-			detail.Price = pri
-		}
-		quantity := r.FormValue("quantity")
-		quan, err := strconv.ParseInt(quantity, 10, 64)
-		if err != nil {
-			detail.Quantity = 1
-			glog.Errorf("parse float %s err: %v", price, err)
-		} else {
-			detail.Quantity = quan
-		}
-		var labeloneData, labeltwoData []byte
-		labelone, _, err := r.FormFile("labelone")
-		switch err {
-		case nil:
-			labeloneData, err = ioutil.ReadAll(labelone)
+		if r.FormValue("update") == "Update" {
+			var detail Detail
+			detailID := r.FormValue("updatedid")
+			id, err := strconv.Atoi(detailID)
 			if err != nil {
-				glog.Errorf("read file err: %v\n", err)
+				glog.Errorf("convert string %s to int err: %v", detailID, err)
 			}
-		case http.ErrMissingFile:
-			glog.Infof("no file uploaded \n")
-		default:
-			glog.Errorf("upload file err: %v\n", err)
-		}
-		labeltwo, _, err := r.FormFile("labeltwo")
-		switch err {
-		case nil:
-			labeltwoData, err = ioutil.ReadAll(labeltwo)
+			detail.ID = id
+			name := r.FormValue("updatedname")
+			detail.Name = name
+			price := r.FormValue("updatedprice")
+			pri, err := strconv.ParseFloat(price, 64)
 			if err != nil {
-				glog.Errorf("read file err: %v\n", err)
+				detail.Price = 0.0
+				glog.Errorf("parse float %s err: %v", price, err)
+			} else {
+				detail.Price = pri
 			}
-			// receiptData, err = base64.StdEncoding.DecodeString(string(receiptData))
-			// if err != nil {
-			// 	glog.Errorf("convert file to base64 err: %v\n", err)
-			// }
-		case http.ErrMissingFile:
-			glog.Infof("no file uploaded \n")
-		default:
-			glog.Errorf("upload file err: %v\n", err)
+			quantity := r.FormValue("updatedquantity")
+			quan, err := strconv.ParseInt(quantity, 10, 64)
+			if err != nil {
+				detail.Quantity = 1
+				glog.Errorf("parse float %s err: %v", price, err)
+			} else {
+				detail.Quantity = quan
+			}
+			var labeloneData, labeltwoData []byte
+			labelone, _, err := r.FormFile("updatedlone")
+			switch err {
+			case nil:
+				labeloneData, err = ioutil.ReadAll(labelone)
+				if err != nil {
+					glog.Errorf("read file err: %v\n", err)
+				}
+			case http.ErrMissingFile:
+				glog.Infof("no file uploaded \n")
+			default:
+				glog.Errorf("upload file err: %v\n", err)
+			}
+			labeltwo, _, err := r.FormFile("updatedltwo")
+			switch err {
+			case nil:
+				labeltwoData, err = ioutil.ReadAll(labeltwo)
+				if err != nil {
+					glog.Errorf("read file err: %v\n", err)
+				}
+			case http.ErrMissingFile:
+				glog.Infof("no file uploaded \n")
+			default:
+				glog.Errorf("upload file err: %v\n", err)
+			}
+			detail.LabelOne = string(labeloneData)
+			detail.LabelTwo = string(labeltwoData)
+			remark := r.FormValue("updatedremark")
+			detail.Remark = remark
+			detail.Operation.UpdatedTime = time.Now().Format(LongFormat)
+			detail.Operation.UpdatedBy = 0
+			rowsAffected := detail.UpdEntity()
+			if rowsAffected > 0 {
+				//insert successful
+			}
+		} else {
+			var detail Detail
+			iid, err := strconv.Atoi(itemid)
+			if err != nil {
+				glog.Fatalf("get item id %s err: %v", itemid, err)
+			}
+			detail.Item.ID = iid
+			name := r.FormValue("name")
+			detail.Name = name
+			price := r.FormValue("price")
+			pri, err := strconv.ParseFloat(price, 64)
+			if err != nil {
+				detail.Price = 0.0
+				glog.Errorf("parse float %s err: %v", price, err)
+			} else {
+				detail.Price = pri
+			}
+			quantity := r.FormValue("quantity")
+			quan, err := strconv.ParseInt(quantity, 10, 64)
+			if err != nil {
+				detail.Quantity = 1
+				glog.Errorf("parse float %s err: %v", price, err)
+			} else {
+				detail.Quantity = quan
+			}
+			var labeloneData, labeltwoData []byte
+			labelone, _, err := r.FormFile("labelone")
+			switch err {
+			case nil:
+				labeloneData, err = ioutil.ReadAll(labelone)
+				if err != nil {
+					glog.Errorf("read file err: %v\n", err)
+				}
+			case http.ErrMissingFile:
+				glog.Infof("no file uploaded \n")
+			default:
+				glog.Errorf("upload file err: %v\n", err)
+			}
+			labeltwo, _, err := r.FormFile("labeltwo")
+			switch err {
+			case nil:
+				labeltwoData, err = ioutil.ReadAll(labeltwo)
+				if err != nil {
+					glog.Errorf("read file err: %v\n", err)
+				}
+			case http.ErrMissingFile:
+				glog.Infof("no file uploaded \n")
+			default:
+				glog.Errorf("upload file err: %v\n", err)
+			}
+			detail.LabelOne = string(labeloneData)
+			detail.LabelTwo = string(labeltwoData)
+			remark := r.FormValue("remark")
+			detail.Remark = remark
+			detail.CreatedTime = time.Now().Format(LongFormat)
+			detail.CreatedBy = 0
+			lastInsertId := detail.AddEntity()
+			if lastInsertId > 0 {
+				//insert successful
+			}
 		}
-		detail.LabelOne = string(labeloneData)
-		detail.LabelTwo = string(labeltwoData)
-		remark := r.FormValue("remark")
-		detail.Remark = remark
-		detail.CreatedTime = time.Now().Format(LongFormat)
-		detail.CreatedBy = 0
-		lastInsertId := detail.AddEntity()
-		if lastInsertId > 0 {
-			//insert successful
-		}
-
 		http.Redirect(w, r, "/detail?iid="+itemid, http.StatusMovedPermanently)
 	}
 }
@@ -1677,6 +1858,24 @@ func RemoveReceiptHandler(w http.ResponseWriter, r *http.Request) {
 	item.Operation.UpdatedTime = time.Now().Format(LongFormat)
 	item.Operation.UpdatedBy = 0
 	if item.RemoveRceipt() > 0 {
+		fmt.Fprint(w, true)
+	} else {
+		fmt.Fprint(w, false)
+	}
+}
+func RemoveLabelHandler(w http.ResponseWriter, r *http.Request) {
+	CheckSessions(w, r)
+	var detail Detail
+	detailID := r.FormValue("id")
+	id, err := strconv.Atoi(detailID)
+	if err != nil {
+		glog.Errorf("err :%v", err)
+	}
+	label := r.FormValue("label")
+	detail.ID = id
+	detail.Operation.UpdatedTime = time.Now().Format(LongFormat)
+	detail.Operation.UpdatedBy = 0
+	if detail.RemoveLabel(label) > 0 {
 		fmt.Fprint(w, true)
 	} else {
 		fmt.Fprint(w, false)
