@@ -22,6 +22,7 @@
       <ul class="nav navbar-nav">
         <li name="cate"><a href="/category">Category</a></li>
         <li name="item"><a href="/item">Item</a></li>
+        <li name="user"><a href="/user">User</a></li>
       </ul>
     </div><!--/.nav-collapse -->
   </div>

@@ -218,11 +218,12 @@ func (user User) AddEntity() int64 {
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
-	stmt, err := db.Prepare("insert into User(Username, Password, Hostname, CreatedTime, CreatedBy) values(?,?,?,?,?)")
+	stmt, err := db.Prepare("insert into User(Username, Password,Nick, Hostname, CreatedTime, CreatedBy) values(?,?,?,?,?,?)")
 	if err != nil {
 		glog.Errorf("stmt err: %v\n", err)
 	}
-	res, err := stmt.Exec(euser.Username, euser.Password, euser.Hostname, euser.CreatedTime, euser.CreatedBy)
+	res, err := stmt.Exec(euser.Username, euser.Password, euser.Nick, euser.Hostname,
+		euser.OperationEncrypted.CreatedTime, euser.OperationEncrypted.CreatedBy)
 	if err != nil {
 		glog.Errorf("query err: %v\n", err)
 	}
@@ -258,6 +259,7 @@ func (user User) Encrypt() UserEncrypted {
 		ID:                 user.ID,
 		Username:           username,
 		Password:           password,
+		Nick:               user.Nick,
 		Hostname:           hostname,
 		LastLoginTime:      lastlogintime,
 		LastLoginIP:        lastloginip,
@@ -289,6 +291,7 @@ func (euser UserEncrypted) Decrypt() User {
 		ID:            euser.ID,
 		Username:      string(username),
 		Password:      string(password),
+		Nick:          euser.Nick,
 		Hostname:      string(hostname),
 		LastLoginTime: string(lastlogintime),
 		LastLoginIP:   string(lastloginip),
@@ -341,7 +344,22 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		templates.ExecuteTemplate(w, "user.gtpl", data)
 	} else if r.Method == "POST" {
-
+		un := r.FormValue("username")
+		pwd := r.FormValue("password")
+		nick := r.FormValue("nick")
+		hn := r.FormValue("hostname")
+		var user User
+		user.Username = un
+		user.Password = pwd
+		user.Nick = nick
+		user.Hostname = hn
+		user.Operation.CreatedTime = time.Now().Format(LongFormat)
+		user.Operation.CreatedBy = 0
+		lastInsertId := user.AddEntity()
+		if lastInsertId > -1 {
+			//successful
+		}
+		http.Redirect(w, r, "/user", http.StatusMovedPermanently)
 	}
 }
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
