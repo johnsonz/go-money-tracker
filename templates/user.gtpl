@@ -19,6 +19,7 @@
                 <th>#</th>
                 <th>Name</th>
                 <th>Nick</th>
+                <th>Host</th>
                 <th>LastLoginTime</th>
                 <th>LastLoginIP</th>
                 <th>C.Time</th>
@@ -31,7 +32,8 @@
                 <td><span name="userid">{{.ID}}</span></td>
                 <td><span name="username">{{.Username}}</span></td>
                 <td><span name="usernick">{{.Nick}}</span></td>
-                <td><span name="userltime">{{.LastLoginTime}}</span></td>
+                <td><span name="usernick">{{.Hostname}}</span></td>
+                <td><span name="userhost">{{.LastLoginTime}}</span></td>
                 <td><span name="userlip">{{.LastLoginIP}}</span></td>
                 <td><span name="userctime">{{.Operation.CreatedTime}}</span></td>
                 <td><span name="usercby">{{.Operation.CreatedBy}}</span></td>

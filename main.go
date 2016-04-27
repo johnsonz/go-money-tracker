@@ -213,6 +213,8 @@ func (user User) GetEntity(pagination Pagination) []User {
 	return users
 }
 func (user User) AddEntity() int64 {
+	user.Username = fmt.Sprintf("%X", mtcrypto.MD5(user.Username))
+	user.Password = fmt.Sprintf("%X", mtcrypto.MD5(user.Password))
 	euser := user.Encrypt()
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
