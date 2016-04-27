@@ -236,6 +236,28 @@ func (user User) AddEntity() int64 {
 
 	return lastInsertId
 }
+func (user User) DelEntity() int64 {
+	euser := user.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open db err: %v\n", err)
+	}
+	stmt, err := db.Prepare("update User set IsDeleted=1,DeletedTime=?,DeletedBy=? where id=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(euser.OperationEncrypted.DeletedTime, euser.OperationEncrypted.DeletedBy,
+		euser.ID)
+	if err != nil {
+		glog.Errorf("query err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("query err: %v\n", err)
+	}
+
+	return rowsAffected
+}
 func (user User) Encrypt() UserEncrypted {
 	username, err := mtcrypto.AESEncrypt(key, user.Username)
 	if err != nil {
@@ -311,6 +333,20 @@ func (User User) Count() (count int) {
 func UserHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		var user User
+		if r.URL.Query().Get("action") == delAction {
+			userid := r.FormValue("id")
+			id, err := strconv.Atoi(userid)
+			if err != nil {
+				glog.Errorf("convert userid %s err: %v", userid, err)
+			}
+			user.ID = id
+			user.Operation.DeletedTime = time.Now().Format(LongFormat)
+			user.Operation.DeletedBy = 0
+			rowsAffected := user.DelEntity()
+			if rowsAffected > 0 {
+				//successful
+			}
+		}
 		page := r.URL.Query().Get("page")
 		pageIndex, err := strconv.Atoi(page)
 		if err != nil {
