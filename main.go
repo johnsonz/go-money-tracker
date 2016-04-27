@@ -236,6 +236,30 @@ func (user User) AddEntity() int64 {
 
 	return lastInsertId
 }
+func (user User) UpdEntity() int64 {
+	user.Username = fmt.Sprintf("%X", mtcrypto.MD5(user.Username))
+	user.Password = fmt.Sprintf("%X", mtcrypto.MD5(user.Password))
+	euser := user.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open db err: %v\n", err)
+	}
+	stmt, err := db.Prepare("update User set Username=?, Password=?,Nick=?, Hostname=?,UpdatedTime=?, UpdatedBy=? where id=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(euser.Username, euser.Password, euser.Nick, euser.Hostname,
+		euser.OperationEncrypted.UpdatedTime, euser.OperationEncrypted.UpdatedBy, euser.ID)
+	if err != nil {
+		glog.Errorf("query err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("query err: %v\n", err)
+	}
+
+	return rowsAffected
+}
 func (user User) DelEntity() int64 {
 	euser := user.Encrypt()
 	db, err := sql.Open(dbDrive, "./data.db")
@@ -382,22 +406,47 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		templates.ExecuteTemplate(w, "user.gtpl", data)
 	} else if r.Method == "POST" {
-		un := r.FormValue("username")
-		pwd := r.FormValue("password")
-		nick := r.FormValue("nick")
-		hn := r.FormValue("hostname")
-		var user User
-		user.Username = un
-		user.Password = pwd
-		user.Nick = nick
-		user.Hostname = hn
-		user.Operation.CreatedTime = time.Now().Format(LongFormat)
-		user.Operation.CreatedBy = 0
-		lastInsertId := user.AddEntity()
-		if lastInsertId > -1 {
-			//successful
+		pageIndex := r.FormValue("pageIndex")
+		if r.FormValue("update") == "Update" {
+			uid := r.FormValue("updatedid")
+			id, err := strconv.Atoi(uid)
+			if err != nil {
+				glog.Errorf("convert uid %s err: %v", uid, err)
+			}
+			un := r.FormValue("updatedname")
+			pwd := r.FormValue("updatedpassword")
+			nick := r.FormValue("updatednick")
+			hn := r.FormValue("updatedhost")
+			var user User
+			user.ID = id
+			user.Username = un
+			user.Password = pwd
+			user.Nick = nick
+			user.Hostname = hn
+			user.Operation.UpdatedTime = time.Now().Format(LongFormat)
+			user.Operation.UpdatedBy = 0
+			rowsAffected := user.UpdEntity()
+			if rowsAffected > 0 {
+				//successful
+			}
+		} else {
+			un := r.FormValue("username")
+			pwd := r.FormValue("password")
+			nick := r.FormValue("nick")
+			hn := r.FormValue("hostname")
+			var user User
+			user.Username = un
+			user.Password = pwd
+			user.Nick = nick
+			user.Hostname = hn
+			user.Operation.CreatedTime = time.Now().Format(LongFormat)
+			user.Operation.CreatedBy = 0
+			lastInsertId := user.AddEntity()
+			if lastInsertId > -1 {
+				//successful
+			}
 		}
-		http.Redirect(w, r, "/user", http.StatusMovedPermanently)
+		http.Redirect(w, r, "/user?page="+pageIndex, http.StatusMovedPermanently)
 	}
 }
 func LoginHandler(w http.ResponseWriter, r *http.Request) {

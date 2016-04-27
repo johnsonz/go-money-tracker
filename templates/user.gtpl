@@ -32,12 +32,12 @@
                 <td><span name="userid">{{.ID}}</span></td>
                 <td><span name="username">{{.Username}}</span></td>
                 <td><span name="usernick">{{.Nick}}</span></td>
-                <td><span name="usernick">{{.Hostname}}</span></td>
-                <td><span name="userhost">{{.LastLoginTime}}</span></td>
+                <td><span name="userhost">{{.Hostname}}</span></td>
+                <td><span name="userltime">{{.LastLoginTime}}</span></td>
                 <td><span name="userlip">{{.LastLoginIP}}</span></td>
                 <td><span name="userctime">{{.Operation.CreatedTime}}</span></td>
                 <td><span name="usercby">{{.Operation.CreatedBy}}</span></td>
-                <td><a href="javascript:" data-toggle="modal" data-target="#Modal" class="btn btn-link edit">Edit</td>
+                <td><a href="javascript:" data-toggle="modal" data-target="#Modal-User" class="btn btn-link edit">Edit</td>
                 <td><a href="/user?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
             </tr>
             {{end}}
@@ -92,6 +92,51 @@
 
                     </ul>
                     </nav>
+    </div>
+    <input type="text" name="updatedid" id="updatedid"  hidden="hidden">
+    <div class="modal fade" id="Modal-User" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="ModalLabel">Edit</h4>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <label for="username" class="control-label">Username:</label>
+                            <input type="text" name="updatedname" class="form-control" id="username">
+                        </div>
+                        <div class="form-group">
+                            <label for="userpassword" class="control-label">Password:</label>
+                            <input type="text" name="updatedpassword" class="form-control" id="userpassword">
+                        </div>
+                        <div class="form-group">
+                            <label for="usernick" class="control-label">Nick:</label>
+                            <input type="text" name="updatednick" class="form-control" id="usernick">
+                        </div>
+                        <div class="form-group">
+                            <label for="userhost" class="control-label">Hostname:</label>
+                            <input type="text" name="updatedhost" class="form-control" id="userhost">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdtime" class="control-label">Created Time:</label>
+                            <input type="text" class="form-control" id="createdtime" disabled="disabled">
+                            </textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="createdby" class="control-label">Created By:</label>
+                            <input type="text" class="form-control" id="createdby" disabled="disabled">
+                            </textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <input type="submit" name="update" value="Update" class="btn btn-primary" />
+                </div>
+            </div>
+        </div>
     </div>
 </form>
 {{template "footer" .}}

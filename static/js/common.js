@@ -189,6 +189,21 @@ $(function() {
                 });
         });
     });
+    $('#Modal-User').on('show.bs.modal', function(event) {
+        var element = $(event.relatedTarget) // element that triggered the modal
+        var ep = element.parent().parent();
+        var id = ep.find("span[name='userid']").html();
+        var nick = ep.find("span[name='usernick']").html();
+        var host = ep.find("span[name='userhost']").html();
+        var time = ep.find("span[name='userctime']").html();
+        var by = ep.find("span[name='usercby']").html();
+        var modal = $(this)
+        $('#updatedid').val(id);
+        modal.find('.modal-body #usernick').val(nick);
+        modal.find('.modal-body #userhost').val(host);
+        modal.find('.modal-body #createdtime').val(time);
+        modal.find('.modal-body #createdby').val(by);
+    });
     setActiveNav();
 });
 
