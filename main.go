@@ -91,22 +91,24 @@ type DetailEncrypted struct {
 	OperationEncrypted
 }
 type User struct {
-	ID          int
-	Username    string
-	Password    string
-	LastLoginIP string
-	Hostname    string
-	CreatedTime string
-	CreatedBy   int
+	ID            int
+	Username      string
+	Password      string
+	Nick          string
+	LastLoginTime string
+	LastLoginIP   string
+	Hostname      string
+	Operation
 }
 type UserEncrypted struct {
-	ID          int
-	Username    []byte
-	Password    []byte
-	LastLoginIP []byte
-	Hostname    []byte
-	CreatedTime []byte
-	CreatedBy   int
+	ID            int
+	Username      []byte
+	Password      []byte
+	Nick          string
+	LastLoginTime []byte
+	LastLoginIP   []byte
+	Hostname      []byte
+	OperationEncrypted
 }
 type Operation struct {
 	CreatedTime string
@@ -131,11 +133,6 @@ type Pagination struct {
 	Next     int
 }
 
-var categorytemplate *template.Template
-var subcategorytemplate *template.Template
-var itemtemplate *template.Template
-var detailtemplate *template.Template
-var logintemplate *template.Template
 var store *sessions.CookieStore
 var templates *template.Template
 
@@ -170,6 +167,7 @@ func main() {
 	http.HandleFunc("/getsubcategory", GetSubcategoryHandler)
 	http.HandleFunc("/item", ItemHandler)
 	http.HandleFunc("/detail", DetailHandler)
+	http.HandleFunc("/user", UserHandler)
 	http.HandleFunc("/rmrept", RemoveReceiptHandler)
 	http.HandleFunc("/rmlabel", RemoveLabelHandler)
 
@@ -191,23 +189,25 @@ func CheckSessions(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusMovedPermanently)
 	}
 }
-func (user User) GetEntity() []User {
+func (user User) GetEntity(pagination Pagination) []User {
 	db, err := sql.Open(dbDrive, "./data.db")
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
-	stmt, err := db.Prepare("select ID, Username, Password, Hostname from User where IsDeleted=0")
+	stmt, err := db.Prepare("select ID, Username, Password,Nick, Hostname,LastLoginTime,LastLoginIP,CreatedTime,CreatedBy from User where IsDeleted=0 limit ? offset ?")
 	if err != nil {
 		glog.Errorf("stmt err: %v\n", err)
 	}
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(pageSize, pageSize*(pagination.Index-1))
 	if err != nil {
 		glog.Errorf("query err: %v\n", err)
 	}
 	var users []User
 	for rows.Next() {
 		var euser UserEncrypted
-		rows.Scan(&euser.ID, &euser.Username, &euser.Password, &euser.Hostname)
+		rows.Scan(&euser.ID, &euser.Username, &euser.Password, &euser.Nick, &euser.Hostname,
+			&euser.LastLoginTime, &euser.LastLoginIP, &euser.OperationEncrypted.CreatedTime,
+			&euser.OperationEncrypted.CreatedBy)
 		users = append(users, euser.Decrypt())
 	}
 	return users
@@ -246,17 +246,22 @@ func (user User) Encrypt() UserEncrypted {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", user.Hostname, err)
 	}
-	ctime, err := mtcrypto.AESEncrypt(key, user.CreatedTime)
+	lastlogintime, err := mtcrypto.AESEncrypt(key, user.LastLoginTime)
 	if err != nil {
-		glog.Errorf("enctypt name %s err: %v", user.CreatedTime, err)
+		glog.Errorf("enctypt name %s err: %v", user.LastLoginTime, err)
+	}
+	lastloginip, err := mtcrypto.AESEncrypt(key, user.LastLoginIP)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", user.LastLoginIP, err)
 	}
 	return UserEncrypted{
-		ID:          user.ID,
-		Username:    username,
-		Password:    password,
-		Hostname:    hostname,
-		CreatedTime: ctime,
-		CreatedBy:   user.CreatedBy,
+		ID:                 user.ID,
+		Username:           username,
+		Password:           password,
+		Hostname:           hostname,
+		LastLoginTime:      lastlogintime,
+		LastLoginIP:        lastloginip,
+		OperationEncrypted: user.Operation.Encryt(),
 	}
 }
 func (euser UserEncrypted) Decrypt() User {
@@ -272,17 +277,71 @@ func (euser UserEncrypted) Decrypt() User {
 	if err != nil {
 		glog.Errorf("enctypt name %s err: %v", euser.Hostname, err)
 	}
-	ctime, err := mtcrypto.AESDecrypt(key, euser.CreatedTime)
+	lastlogintime, err := mtcrypto.AESDecrypt(key, euser.LastLoginTime)
 	if err != nil {
-		glog.Errorf("enctypt name %s err: %v", euser.CreatedTime, err)
+		glog.Errorf("enctypt name %s err: %v", euser.LastLoginTime, err)
+	}
+	lastloginip, err := mtcrypto.AESDecrypt(key, euser.LastLoginIP)
+	if err != nil {
+		glog.Errorf("enctypt name %s err: %v", euser.LastLoginIP, err)
 	}
 	return User{
-		ID:          euser.ID,
-		Username:    string(username),
-		Password:    string(password),
-		Hostname:    string(hostname),
-		CreatedTime: string(ctime),
-		CreatedBy:   euser.CreatedBy,
+		ID:            euser.ID,
+		Username:      string(username),
+		Password:      string(password),
+		Hostname:      string(hostname),
+		LastLoginTime: string(lastlogintime),
+		LastLoginIP:   string(lastloginip),
+		Operation:     euser.OperationEncrypted.Decryt(),
+	}
+}
+func (User User) Count() (count int) {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open sqlite err: %v\n", err)
+	}
+	db.QueryRow("select count(*) from User where IsDeleted=0", nil).Scan(&count)
+	return count
+}
+func UserHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		var user User
+		page := r.URL.Query().Get("page")
+		pageIndex, err := strconv.Atoi(page)
+		if err != nil {
+			pageIndex = 1
+			glog.Infof("get page index err: %v", err)
+		}
+
+		var pagination Pagination
+		pagination.Index = pageIndex
+		count := user.Count()
+		if count%2 == 0 {
+			pagination.Count = count / 2
+		} else {
+			pagination.Count = count/2 + 1
+		}
+		pagination.Previous = pageIndex - 1
+		pagination.Next = pageIndex + 1
+		if pagination.Index > pagination.Count {
+			pagination.Index -= 1
+		}
+		if pagination.Index < 1 {
+			pagination.Index = 1
+		}
+		users := user.GetEntity(pagination)
+		data := struct {
+			Title      string
+			Users      []User
+			Pagination Pagination
+		}{
+			Title:      "User",
+			Users:      users,
+			Pagination: pagination,
+		}
+		templates.ExecuteTemplate(w, "user.gtpl", data)
+	} else if r.Method == "POST" {
+
 	}
 }
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -304,7 +363,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		// 	glog.Errorf("get hostname err: %v", err)
 		// }
 		var user User
-		users := user.GetEntity()
+		users := user.GetEntity(Pagination{Index: -1})
 		usernamemd5 := fmt.Sprintf("%X", mtcrypto.MD5(username))
 		passwordmd5 := fmt.Sprintf("%X", mtcrypto.MD5(password))
 		// hostnamemd5 := fmt.Sprintf("%X", mtcrypto.MD5(hostname))
