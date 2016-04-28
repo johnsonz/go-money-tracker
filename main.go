@@ -129,6 +129,7 @@ type OperationEncrypted struct {
 type Pagination struct {
 	Count    int
 	Index    int
+	Size     int
 	Previous int
 	Next     int
 }
@@ -198,7 +199,7 @@ func (user User) GetEntity(pagination Pagination) []User {
 	if err != nil {
 		glog.Errorf("stmt err: %v\n", err)
 	}
-	rows, err := stmt.Query(pageSize, pageSize*(pagination.Index-1))
+	rows, err := stmt.Query(pagination.Size, pagination.Size*(pagination.Index-1))
 	if err != nil {
 		glog.Errorf("query err: %v\n", err)
 	}
@@ -379,6 +380,7 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var pagination Pagination
+		pagination.Size = pageSize
 		pagination.Index = pageIndex
 		count := user.Count()
 		if count%2 == 0 {
@@ -468,7 +470,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		// 	glog.Errorf("get hostname err: %v", err)
 		// }
 		var user User
-		users := user.GetEntity(Pagination{Index: -1})
+		users := user.GetEntity(Pagination{Size: -1, Index: 0})
 		usernamemd5 := fmt.Sprintf("%X", mtcrypto.MD5(username))
 		passwordmd5 := fmt.Sprintf("%X", mtcrypto.MD5(password))
 		// hostnamemd5 := fmt.Sprintf("%X", mtcrypto.MD5(hostname))
