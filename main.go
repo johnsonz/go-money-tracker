@@ -213,6 +213,29 @@ func (user User) GetEntity(pagination Pagination) []User {
 	}
 	return users
 }
+func (user User) GetAllEntity() []User {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open db err: %v\n", err)
+	}
+	stmt, err := db.Prepare("select ID, Username, Password,Nick, Hostname,LastLoginTime,LastLoginIP,CreatedTime,CreatedBy from User where IsDeleted=0")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	rows, err := stmt.Query()
+	if err != nil {
+		glog.Errorf("query err: %v\n", err)
+	}
+	var users []User
+	for rows.Next() {
+		var euser UserEncrypted
+		rows.Scan(&euser.ID, &euser.Username, &euser.Password, &euser.Nick, &euser.Hostname,
+			&euser.LastLoginTime, &euser.LastLoginIP, &euser.OperationEncrypted.CreatedTime,
+			&euser.OperationEncrypted.CreatedBy)
+		users = append(users, euser.Decrypt())
+	}
+	return users
+}
 func (user User) AddEntity() int64 {
 	user.Username = fmt.Sprintf("%X", mtcrypto.MD5(user.Username))
 	user.Password = fmt.Sprintf("%X", mtcrypto.MD5(user.Password))
@@ -470,7 +493,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		// 	glog.Errorf("get hostname err: %v", err)
 		// }
 		var user User
-		users := user.GetEntity(Pagination{Size: -1, Index: 0})
+		users := user.GetAllEntity()
 		usernamemd5 := fmt.Sprintf("%X", mtcrypto.MD5(username))
 		passwordmd5 := fmt.Sprintf("%X", mtcrypto.MD5(password))
 		// hostnamemd5 := fmt.Sprintf("%X", mtcrypto.MD5(hostname))
