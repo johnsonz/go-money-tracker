@@ -589,7 +589,30 @@ func (cate Category) GetEntity(pagination Pagination) []Category {
 	if err != nil {
 		glog.Errorf("stmt err: %v\n", err)
 	}
-	rows, err := stmt.Query(pageSize, pageSize*(pagination.Index-1))
+	rows, err := stmt.Query(pagination.Size, pagination.Size*(pagination.Index-1))
+	if err != nil {
+		glog.Errorf("Category->GetEntity->query err: %v\n", err)
+	}
+	defer rows.Close()
+	var cates []Category
+	for rows.Next() {
+		var ecate CategoryEncrypted
+		rows.Scan(&ecate.ID, &ecate.Name, &ecate.CreatedTime, &ecate.CreatedBy)
+		cates = append(cates, ecate.Decrypt())
+	}
+	return cates
+}
+func (cate Category) GetAllEntity() []Category {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Category->GetEntity->open sqlite err: %v\n", err)
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("SELECT ID, Name,CreatedTime, CreatedBy FROM Category where IsDeleted=0")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	rows, err := stmt.Query()
 	if err != nil {
 		glog.Errorf("Category->GetEntity->query err: %v\n", err)
 	}
@@ -721,6 +744,7 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var pagination Pagination
+		pagination.Size = pageSize
 		pagination.Index = pageIndex
 		count := cate.Count()
 		if count%2 == 0 {
@@ -793,7 +817,30 @@ func (subcate Subcategory) GetEntity(pagination Pagination) []Subcategory {
 	if err != nil {
 		glog.Errorf("Subcategory->GetEntity->stmt err: %v\n", err)
 	}
-	rows, err := stmt.Query(subcate.Category.ID, pageSize, pageSize*(pagination.Index-1))
+	rows, err := stmt.Query(subcate.Category.ID, pagination.Size, pagination.Size*(pagination.Index-1))
+	if err != nil {
+		glog.Errorf("Subcategory->GetEntity->rows err: %v\n", err)
+	}
+	var subcates []Subcategory
+	for rows.Next() {
+		var esubcate SubcategoryEncrypted
+		rows.Scan(&esubcate.ID, &esubcate.CategoryEncrypted.ID, &esubcate.Name,
+			&esubcate.OperationEncrypted.CreatedTime, &esubcate.OperationEncrypted.CreatedBy)
+		subcates = append(subcates, esubcate.Decrypt())
+	}
+	return subcates
+}
+func (subcate Subcategory) GetAllEntity() []Subcategory {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Subcategory->GetEntity->open db err: %v\n", err)
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("SELECT ID,CategoryID, Name, CreatedTime, CreatedBy FROM Subcategory where IsDeleted=0 and CategoryID=?")
+	if err != nil {
+		glog.Errorf("Subcategory->GetEntity->stmt err: %v\n", err)
+	}
+	rows, err := stmt.Query(subcate.Category.ID)
 	if err != nil {
 		glog.Errorf("Subcategory->GetEntity->rows err: %v\n", err)
 	}
@@ -917,7 +964,7 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		cateID, err := strconv.Atoi(cateIDFromURL)
 		subcate.Category.ID = 0
 		var cate Category
-		cates := cate.GetEntity(Pagination{Index: -1})
+		cates := cate.GetAllEntity()
 
 		for i, _ := range cates {
 			if cates[i].ID == subcate.Category.ID {
@@ -955,6 +1002,7 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var pagination Pagination
+		pagination.Size = pageSize
 		pagination.Index = pageIndex
 		count := subcate.CountByCategoryId(subcate.Category.ID)
 		if count%2 == 0 {
@@ -1036,7 +1084,37 @@ func (item Item) GetEntity(pagination Pagination) []Item {
 		glog.Errorf("Item->GetEntity->stmt err: %v\n", err)
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query(pageSize, pageSize*(pagination.Index-1))
+	rows, err := stmt.Query(pagination.Size, pagination.Size*(pagination.Index-1))
+	if err != nil {
+		glog.Errorf("Item->GetEntity->query err: %v\n", err)
+	}
+	defer rows.Close()
+	var items []Item
+	for rows.Next() {
+		var eitem ItemEncrypted
+		rows.Scan(&eitem.ID, &eitem.Store, &eitem.Address, &eitem.PurchasedDate, &eitem.Amount,
+			&eitem.Receipt, &eitem.Remark, &eitem.OperationEncrypted.CreatedTime,
+			&eitem.OperationEncrypted.CreatedBy, &eitem.SubcategoryEncrypted.ID,
+			&eitem.SubcategoryEncrypted.Name, &eitem.SubcategoryEncrypted.CategoryEncrypted.ID,
+			&eitem.SubcategoryEncrypted.CategoryEncrypted.Name)
+		item := eitem.Decrypt()
+		item.Receipt = mtcrypto.Base64Encode([]byte(item.Receipt))
+		items = append(items, item)
+	}
+	return items
+}
+func (item Item) GetAllEntity() []Item {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("Item->GetEntity->open db err: %v\n", err)
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("select ID,Store,Address,PurchasedDate,Amount,ReceiptImage,Remark,CreatedTime,CreatedBy,SubcategoryID,SubcategoryName,CategoryID,CategoryName from vw_Item where IsDeleted=0")
+	if err != nil {
+		glog.Errorf("Item->GetEntity->stmt err: %v\n", err)
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query()
 	if err != nil {
 		glog.Errorf("Item->GetEntity->query err: %v\n", err)
 	}
@@ -1270,7 +1348,7 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		var cate Category
 		var subcate Subcategory
 
-		cates := cate.GetEntity(Pagination{Index: -1})
+		cates := cate.GetAllEntity()
 		// itemID := r.URL.Query().Get("id")
 		cateID := r.URL.Query().Get("cid")
 		subcateID := r.URL.Query().Get("sid")
@@ -1284,7 +1362,7 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 			glog.Infof("convert cid to int err: %v\n", err)
 		}
 		subcate.Category.ID = cid
-		subcates := subcate.GetEntity(Pagination{Index: -1})
+		subcates := subcate.GetAllEntity()
 		sid, err := strconv.Atoi(subcateID)
 		if err != nil {
 			sid = 0
@@ -1313,6 +1391,7 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var pagination Pagination
+		pagination.Size = pageSize
 		pagination.Index = pageIndex
 		count := item.Count()
 		if count%2 == 0 {
@@ -1456,6 +1535,33 @@ func (detail Detail) GetEntity(pagination Pagination) []Detail {
 		glog.Errorf("db prepare err: %v\n", err)
 	}
 	rows, err := stmt.Query(detail.Item.ID, pageSize, pageSize*(pagination.Index-1))
+	if err != nil {
+		glog.Errorf("exec err: %v\n", err)
+	}
+	var details []Detail
+	for rows.Next() {
+		var edetail DetailEncrypted
+		rows.Scan(&edetail.ID, &edetail.Name, &edetail.Price, &edetail.Quantity,
+			&edetail.LabelOne, &edetail.LabelTwo, &edetail.Remark,
+			&edetail.CreatedTime, &edetail.CreatedBy)
+		detail := edetail.Decrypt()
+		detail.LabelOne = mtcrypto.Base64Encode([]byte(detail.LabelOne))
+		detail.LabelTwo = mtcrypto.Base64Encode([]byte(detail.LabelTwo))
+
+		details = append(details, detail)
+	}
+	return details
+}
+func (detail Detail) GetAllEntity() []Detail {
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open db err: %v\n", err)
+	}
+	stmt, err := db.Prepare("select ID,Name,Price,Quantity,LabelOne,LabelTwo,Remark,CreatedTime,CreatedBy from Detail where IsDeleted=0 and ItemID=?")
+	if err != nil {
+		glog.Errorf("db prepare err: %v\n", err)
+	}
+	rows, err := stmt.Query(detail.Item.ID)
 	if err != nil {
 		glog.Errorf("exec err: %v\n", err)
 	}
@@ -1854,6 +1960,7 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var pagination Pagination
+		pagination.Size = pageSize
 		pagination.Index = pageIndex
 		count := detail.Count(iid)
 		if count%2 == 0 {
@@ -2021,7 +2128,7 @@ func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		subcate.Category.ID = cateID
 	}
-	subcates := subcate.GetEntity(Pagination{Index: -1})
+	subcates := subcate.GetAllEntity()
 	data, err := json.Marshal(subcates)
 	if err != nil {
 		glog.Errorf("convert %T to json err: %v", subcates, err)
