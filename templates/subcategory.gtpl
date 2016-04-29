@@ -26,8 +26,9 @@
                 <td><span name="subcatename">{{.Name}}</span></td>
                 <td><span name="subcatectime">{{.CreatedTime}}</span></td>
                 <td><span name="subcatecby">{{.CreatedBy}}</span></td>
-                <td><a href="javascript:" data-toggle="modal" data-target="#Modal-Subcate" class="btn btn-link edit">Edit</td>
-                <td><a href="/subcategory?id={{.Category.ID}}&sid={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
+                <td><a href="javascript:viod(0)" data-toggle="modal" data-target="#Modal-Subcate" class="btn btn-link edit">Edit</td>
+                <!-- <td><a href="/subcategory?id={{.Category.ID}}&sid={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td> -->
+                <td><a href="javascript:void(0)" class="btn btn-link subcatedel">Delete</td>
             </tr>
             {{end}}
             {{else}}
@@ -59,7 +60,7 @@
                 {{end}} {{if gt (minus .Pagination.Index 1) 0}}
                 <li><a href="/subcategory?id={{.CategoryId}}&page={{minus .Pagination.Index 1}}">{{minus .Pagination.Index 1}}</a></li>
                 {{end}}
-                <li class="active"><a href="/subcategory?id={{.CategoryId}}&page={{.Pagination.Index}}">{{.Pagination.Index}}</a></li>
+                <li class="active"><a href="/subcategory?id={{.CategoryId}}&page={{.Pagination.Index}}" id="pageIndex">{{.Pagination.Index}}</a></li>
                 {{if le (plus .Pagination.Index 1) .Pagination.Count}}
                 <li><a href="/subcategory?id={{.CategoryId}}&page={{plus .Pagination.Index 1}}">{{plus .Pagination.Index 1}}</a></li>
                 {{end}} {{if le (plus .Pagination.Index 2) .Pagination.Count}}

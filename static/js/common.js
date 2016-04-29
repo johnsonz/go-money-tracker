@@ -217,6 +217,19 @@ $(function() {
                 }
             });
     });
+    $(".subcatedel").click(function() {
+        var ep = $(this).parent().parent();
+        $.post("/subcategory/del", {
+                id: ep.find("span[name='subcateid']").html()
+            },
+            function(data, status) {
+                if (data) {
+                    location.href = "/subcategory?id="+$("select[name='category']").val()+"&page=" + $("#pageIndex").html();
+                } else {
+                    alert("error");
+                }
+            });
+    });
     setActiveNav();
 });
 

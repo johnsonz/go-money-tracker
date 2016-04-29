@@ -168,6 +168,7 @@ func main() {
 	http.HandleFunc("/category", CategoryHandler) //设置访问的路由
 	http.HandleFunc("/category/del", CategoryDelHandler)
 	http.HandleFunc("/subcategory", SubcategoryHandler)
+	http.HandleFunc("/subcategory/del", SubcategoryDelHandler)
 	http.HandleFunc("/getsubcategory", GetSubcategoryHandler)
 	http.HandleFunc("/item", ItemHandler)
 	http.HandleFunc("/detail", DetailHandler)
@@ -981,7 +982,7 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		cates := cate.GetAllEntity()
 
 		for i, _ := range cates {
-			if cates[i].ID == subcate.Category.ID {
+			if cates[i].ID == cateID {
 				cates[i].Selected = true
 			}
 		}
@@ -993,45 +994,9 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			subcate.Category.ID = cateID
 		}
-		if r.URL.Query().Get("action") == delAction {
-			subcateIDFromURL := r.URL.Query().Get("sid")
-			subcateID, err := strconv.Atoi(subcateIDFromURL)
-			if err != nil {
-				glog.Errorf("Subcategory->convert id err: %v", err)
-			}
-			subcate.ID = subcateID
-			subcate.Operation.DeletedTime = time.Now().Format(LongFormat)
-			subcate.Operation.DeletedBy = 0
-			rowsAffected := subcate.DelEntity()
-			if rowsAffected > 0 {
-				//successful
-			}
-		}
-
 		page := r.URL.Query().Get("page")
-		pageIndex, err := strconv.Atoi(page)
-		if err != nil {
-			pageIndex = 1
-			glog.Infof("get page index err: %v", err)
-		}
-
-		var pagination Pagination
-		pagination.Size = pageSize
-		pagination.Index = pageIndex
 		count := subcate.CountByCategoryId(subcate.Category.ID)
-		if count%2 == 0 {
-			pagination.Count = count / 2
-		} else {
-			pagination.Count = count/2 + 1
-		}
-		pagination.Previous = pageIndex - 1
-		pagination.Next = pageIndex + 1
-		if pagination.Index > pagination.Count {
-			pagination.Index -= 1
-		}
-		if pagination.Index < 1 {
-			pagination.Index = 1
-		}
+		pagination := GetPagination(page, count)
 		subcates := subcate.GetEntity(pagination)
 		data := struct {
 			Title         string
@@ -1046,7 +1011,6 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 			Pagination:    pagination,
 			CategoryId:    subcate.Category.ID,
 		}
-		// subcategorytemplate.Execute(w, data)
 		templates.ExecuteTemplate(w, "subcategory.gtpl", data)
 	} else if r.Method == "POST" {
 		cateIDForm := r.FormValue("category")
@@ -1086,6 +1050,27 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/subcategory?id="+cateIDForm, http.StatusMovedPermanently)
 	}
+}
+func SubcategoryDelHandler(w http.ResponseWriter, r *http.Request) {
+	CheckSessions(w, r)
+	sid := r.FormValue("id")
+	id, err := strconv.Atoi(sid)
+	if err != nil {
+		glog.Errorf("Subcategory->convert id err: %v", err)
+		fmt.Fprint(w, false)
+		return
+	}
+	var subcate Subcategory
+	subcate.ID = id
+	subcate.Operation.DeletedTime = time.Now().Format(LongFormat)
+	subcate.Operation.DeletedBy = 0
+	rowsAffected := subcate.DelEntity()
+	if rowsAffected > 0 {
+		//successful
+		fmt.Fprint(w, true)
+		return
+	}
+	fmt.Fprint(w, false)
 }
 func (item Item) GetEntity(pagination Pagination) []Item {
 	db, err := sql.Open(dbDrive, "./data.db")
