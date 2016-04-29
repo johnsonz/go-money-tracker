@@ -9,6 +9,7 @@ import (
 	"go-money-tracker/mtconverter"
 	"html/template"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -284,6 +285,28 @@ func (user User) UpdEntity() int64 {
 
 	return rowsAffected
 }
+func (user User) UpdLoginInfo() int64 {
+	euser := user.Encrypt()
+	db, err := sql.Open(dbDrive, "./data.db")
+	if err != nil {
+		glog.Errorf("open db err: %v\n", err)
+	}
+	stmt, err := db.Prepare("update User set LastLoginTime=?,LastLoginIP=?,UpdatedTime=?, UpdatedBy=? where id=?")
+	if err != nil {
+		glog.Errorf("stmt err: %v\n", err)
+	}
+	res, err := stmt.Exec(euser.LastLoginTime, euser.LastLoginIP,
+		euser.OperationEncrypted.UpdatedTime, euser.OperationEncrypted.UpdatedBy, euser.ID)
+	if err != nil {
+		glog.Errorf("query err: %v\n", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("query err: %v\n", err)
+	}
+
+	return rowsAffected
+}
 func (user User) DelEntity() int64 {
 	euser := user.Encrypt()
 	db, err := sql.Open(dbDrive, "./data.db")
@@ -518,8 +541,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 					glog.Infof("get session flashes: %v", flashes)
 				} else {
 					// Set a new flash.
-					session.AddFlash(usernamemd5)
+					session.AddFlash(u.ID)
 				}
+				user.ID = u.ID
+				user.LastLoginTime = time.Now().Format(LongFormat)
+				user.LastLoginIP = GetIPFromRequest(r)
+				user.Operation.UpdatedTime = time.Now().Format(LongFormat)
+				user.Operation.UpdatedBy = u.ID
 				session.Save(r, w)
 				http.Redirect(w, r, "/category", http.StatusMovedPermanently)
 			}
@@ -2172,4 +2200,17 @@ func RemoveLabelHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fmt.Fprint(w, false)
 	}
+}
+func GetIPFromRequest(r *http.Request) string {
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		glog.Errorf("userip: %q is not IP:port", r.RemoteAddr)
+		return ""
+	}
+	userIP := net.ParseIP(ip)
+	if userIP == nil {
+		glog.Errorf("userip: %q is not IP:port", r.RemoteAddr)
+		return ""
+	}
+	return userIP.String()
 }
