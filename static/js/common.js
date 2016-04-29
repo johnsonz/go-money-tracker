@@ -230,6 +230,19 @@ $(function() {
                 }
             });
     });
+    $(".itemdel").click(function() {
+        var ep = $(this).parent().parent();
+        $.post("/item/del", {
+                id: ep.find("span[name='itemid']").html()
+            },
+            function(data, status) {
+                if (data) {
+                    location.href = "/item?cid="+$("select[name='category']").val()+"&sid"+$("select[name='subcategory']").val()+"&page=" + $("#pageIndex").html();
+                } else {
+                    alert("error");
+                }
+            });
+    });
     setActiveNav();
 });
 

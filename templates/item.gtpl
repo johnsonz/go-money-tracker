@@ -92,7 +92,8 @@
                 <td><a href="/detail?iid={{.ID}}" class="btn btn-link">View</td>
                 <td><a href="javascript:" data-toggle="modal" data-target="#Modal-Item" class="btn btn-link edit">Edit</td>
                 <td><a href="/detail?iid={{.ID}}" class="btn btn-link">Add</td>
-                <td><a href="/item?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
+                <!-- <td><a href="/item?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td> -->
+                <td><a href="javascript:void(0)" class="btn btn-link itemdel">Delete</td>
             </tr>
             {{end}}
             {{else}}

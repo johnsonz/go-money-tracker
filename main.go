@@ -171,6 +171,7 @@ func main() {
 	http.HandleFunc("/subcategory/del", SubcategoryDelHandler)
 	http.HandleFunc("/getsubcategory", GetSubcategoryHandler)
 	http.HandleFunc("/item", ItemHandler)
+	http.HandleFunc("/item/del", ItemDelHandler)
 	http.HandleFunc("/detail", DetailHandler)
 	http.HandleFunc("/user", UserHandler)
 	http.HandleFunc("/rmrept", RemoveReceiptHandler)
@@ -1328,21 +1329,7 @@ func (item Item) Count() (count int) {
 func ItemHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	if r.Method == "GET" {
-		if r.URL.Query().Get("action") == delAction {
-			eid := r.URL.Query().Get("id")
-			id, err := strconv.Atoi(eid)
-			if err != nil {
-				glog.Errorf("convert string %s to int err: %v", eid, err)
-			}
-			var item Item
-			item.ID = id
-			item.Operation.DeletedTime = time.Now().Format(LongFormat)
-			item.Operation.DeletedBy = 0
-			rowsAffected := item.DelEntity()
-			if rowsAffected > 0 {
-				//successful
-			}
-		}
+
 		var item Item
 		var cate Category
 		var subcate Subcategory
@@ -1383,29 +1370,8 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		page := r.URL.Query().Get("page")
-		pageIndex, err := strconv.Atoi(page)
-		if err != nil {
-			pageIndex = 1
-			glog.Infof("get page index err: %v", err)
-		}
-
-		var pagination Pagination
-		pagination.Size = pageSize
-		pagination.Index = pageIndex
 		count := item.Count()
-		if count%2 == 0 {
-			pagination.Count = count / 2
-		} else {
-			pagination.Count = count/2 + 1
-		}
-		pagination.Previous = pageIndex - 1
-		pagination.Next = pageIndex + 1
-		if pagination.Index > pagination.Count {
-			pagination.Index -= 1
-		}
-		if pagination.Index < 1 {
-			pagination.Index = 1
-		}
+		pagination := GetPagination(page, count)
 		items := item.GetEntity(pagination)
 		data := struct {
 			Title         string
@@ -1523,6 +1489,27 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/item?sid="+strconv.Itoa(sid)+"&cid="+cateID, http.StatusMovedPermanently)
 	}
+}
+func ItemDelHandler(w http.ResponseWriter, r *http.Request) {
+	CheckSessions(w, r)
+	eid := r.FormValue("id")
+	id, err := strconv.Atoi(eid)
+	if err != nil {
+		glog.Errorf("convert string %s to int err: %v", eid, err)
+		fmt.Fprint(w, false)
+		return
+	}
+	var item Item
+	item.ID = id
+	item.Operation.DeletedTime = time.Now().Format(LongFormat)
+	item.Operation.DeletedBy = 0
+	rowsAffected := item.DelEntity()
+	if rowsAffected > 0 {
+		//successful
+		fmt.Fprint(w, true)
+		return
+	}
+	fmt.Fprint(w, false)
 }
 func (detail Detail) GetEntity(pagination Pagination) []Detail {
 	db, err := sql.Open(dbDrive, "./data.db")
