@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -545,9 +546,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				user.ID = u.ID
 				user.LastLoginTime = time.Now().Format(LongFormat)
-				user.LastLoginIP = GetIPFromRequest(r)
+				user.LastLoginIP = GetLocalIP()
 				user.Operation.UpdatedTime = time.Now().Format(LongFormat)
 				user.Operation.UpdatedBy = u.ID
+				user.UpdLoginInfo()
 				session.Save(r, w)
 				http.Redirect(w, r, "/category", http.StatusMovedPermanently)
 			}
@@ -2213,4 +2215,14 @@ func GetIPFromRequest(r *http.Request) string {
 		return ""
 	}
 	return userIP.String()
+}
+func GetLocalIP() string {
+	host, _ := os.Hostname()
+	addrs, _ := net.LookupIP(host)
+	for _, addr := range addrs {
+		if ipv4 := addr.To4(); ipv4 != nil {
+			return ipv4.String()
+		}
+	}
+	return ""
 }
