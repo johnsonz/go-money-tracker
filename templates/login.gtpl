@@ -3,9 +3,9 @@
 <head>
     <title>Login</title>
 
-    <link rel="stylesheet" href="static/bootstrap-3.3.6/css/bootstrap.min.css">
-    <link rel="stylesheet" href="static/bootstrap-3.3.6/css/bootstrap-theme.min.css">
-    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="/static/bootstrap-3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/bootstrap-3.3.6/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 
 <body>
@@ -31,7 +31,7 @@
         </form>
     </div>
     <script src="/static/js/jquery-1.12.3.min.js"></script>
-    <script src="static/bootstrap-3.3.6/js/bootstrap.min.js"></script>
+    <script src="/static/bootstrap-3.3.6/js/bootstrap.min.js"></script>
 </body>
 
 </html>

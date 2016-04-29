@@ -147,7 +147,7 @@ const (
 	key         = "abcdefghijklmnopqrstuvwxyz012345"
 	sessionsKey = "johnson"
 	sessionName = "mt"
-	pageSize    = 2
+	pageSize    = 3
 	pageNavSize = 5
 	delAction   = "del"
 	updAction   = "upd"
@@ -163,9 +163,10 @@ func init() {
 	glog.Infoln("initial done")
 }
 func main() {
-	http.HandleFunc("/", LoginHandler)
+	//http.HandleFunc("/", LoginHandler)
 	http.HandleFunc("/login", LoginHandler)
 	http.HandleFunc("/category", CategoryHandler) //设置访问的路由
+	http.HandleFunc("/category/del", CategoryDelHandler)
 	http.HandleFunc("/subcategory", SubcategoryHandler)
 	http.HandleFunc("/getsubcategory", GetSubcategoryHandler)
 	http.HandleFunc("/item", ItemHandler)
@@ -752,46 +753,9 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	if r.Method == "GET" {
 		var cate Category
-		if r.URL.Query().Get("action") == delAction {
-			cid := r.URL.Query().Get("id")
-			id, err := strconv.Atoi(cid)
-			if err != nil {
-				glog.Errorf("convert string %s to int err: %v", cid, err)
-			}
-			cate.ID = id
-			cate.Operation.DeletedTime = time.Now().Format(LongFormat)
-			cate.Operation.DeletedBy = 0
-			rowsAffected := cate.DelEntity()
-			if rowsAffected > 0 {
-				//successful
-			}
-		}
 		page := r.URL.Query().Get("page")
-		pageIndex, err := strconv.Atoi(page)
-		if err != nil {
-			pageIndex = 1
-			glog.Infof("get page index err: %v", err)
-		}
-
-		var pagination Pagination
-		pagination.Size = pageSize
-		pagination.Index = pageIndex
-		count := cate.Count()
-		if count%2 == 0 {
-			pagination.Count = count / 2
-		} else {
-			pagination.Count = count/2 + 1
-		}
-		pagination.Previous = pageIndex - 1
-		pagination.Next = pageIndex + 1
-		if pagination.Index > pagination.Count {
-			pagination.Index -= 1
-		}
-		if pagination.Index < 1 {
-			pagination.Index = 1
-		}
+		pagination := GetPagination(page, cate.Count())
 		cates := cate.GetEntity(pagination)
-
 		data := struct {
 			Title      string
 			Categories []Category
@@ -835,6 +799,26 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		http.Redirect(w, r, "/category?page="+pageIndex, http.StatusMovedPermanently)
+	}
+}
+func CategoryDelHandler(w http.ResponseWriter, r *http.Request) {
+	var cate Category
+	cid := r.FormValue("id")
+	id, err := strconv.Atoi(cid)
+	if err != nil {
+		glog.Errorf("convert string %s to int err: %v", cid, err)
+		fmt.Fprint(w, false)
+		return
+	}
+	cate.ID = id
+	cate.Operation.DeletedTime = time.Now().Format(LongFormat)
+	cate.Operation.DeletedBy = 0
+	rowsAffected := cate.DelEntity()
+	if rowsAffected > 0 {
+		//successful
+		fmt.Fprint(w, true)
+	} else {
+		fmt.Fprint(w, false)
 	}
 }
 func (subcate Subcategory) GetEntity(pagination Pagination) []Subcategory {
@@ -2225,4 +2209,29 @@ func GetLocalIP() string {
 		}
 	}
 	return ""
+}
+func GetPagination(page string, count int) Pagination {
+	pageIndex, err := strconv.Atoi(page)
+	if err != nil {
+		pageIndex = 1
+		glog.Infof("get page index err: %v", err)
+	}
+
+	var pagination Pagination
+	pagination.Size = pageSize
+	pagination.Index = pageIndex
+	if count%pagination.Size == 0 {
+		pagination.Count = count / pagination.Size
+	} else {
+		pagination.Count = count/pagination.Size + 1
+	}
+	pagination.Previous = pageIndex - 1
+	pagination.Next = pageIndex + 1
+	if pagination.Index > pagination.Count {
+		pagination.Index -= 1
+	}
+	if pagination.Index < 1 {
+		pagination.Index = 1
+	}
+	return pagination
 }

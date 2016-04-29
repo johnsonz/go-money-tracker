@@ -1,6 +1,6 @@
 {{template "header" .}} {{template "nav" .}}
 <form action="/category" method="post">
-    <input type="text" hidden="hidden" name="pageIndex" value="{{.Pagination.Index}}" />
+    <input type="text" hidden="hidden" name="pageIndex" id="pageIndex" value="{{.Pagination.Index}}" />
     <div class="wrap-primary">
         <label for="inputCateName" class="control-label">Category</label>
         <input type="text" name="cateName" id="inputCateName" />
@@ -25,7 +25,8 @@
                 <td><a href="/subcategory?id={{.ID}}" class="btn btn-link">View</td>
                 <td><a href="javascript:" data-toggle="modal" data-target="#Modal" class="btn btn-link edit">Edit</td>
                 <td><a href="/subcategory?id={{.ID}}" class="btn btn-link">Add</td>
-                <td><a href="/category?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td>
+                    <!-- <td><a href="/category?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link" id="catedel">Delete</td> -->
+                <td><a href="javascript:" class="btn btn-link catedel">Delete</td>
             </tr>
             {{end}}
             {{else}}

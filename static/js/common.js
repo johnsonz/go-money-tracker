@@ -204,6 +204,19 @@ $(function() {
         modal.find('.modal-body #createdtime').val(time);
         modal.find('.modal-body #createdby').val(by);
     });
+    $(".catedel").click(function() {
+        var ep = $(this).parent().parent();
+        $.post("/category/del", {
+                id: ep.find("span[name='cateid']").html()
+            },
+            function(data, status) {
+                if (data) {
+                    location.href = "/category?page=" + $("#pageIndex").val();
+                } else {
+                    alert("error");
+                }
+            });
+    });
     setActiveNav();
 });
 
