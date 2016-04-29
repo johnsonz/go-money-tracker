@@ -89,9 +89,9 @@
                 <td><span name="itemremark">{{.Remark}}</span></td>
                 <td><span name="itemctime">{{.Operation.CreatedTime}}</span></td>
                 <td><span name="itemcby">{{.Operation.CreatedBy}}</span></td>
-                <td><a href="/detail?iid={{.ID}}" class="btn btn-link">View</td>
+                <td><a href="/detail?id={{.ID}}" class="btn btn-link">View</td>
                 <td><a href="javascript:" data-toggle="modal" data-target="#Modal-Item" class="btn btn-link edit">Edit</td>
-                <td><a href="/detail?iid={{.ID}}" class="btn btn-link">Add</td>
+                <td><a href="/detail?id={{.ID}}" class="btn btn-link">Add</td>
                 <!-- <td><a href="/item?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td> -->
                 <td><a href="javascript:void(0)" class="btn btn-link itemdel">Delete</td>
             </tr>
@@ -126,7 +126,7 @@
                 <!-- <li><a href="/item?page={{minus .Pagination.Index 1}}">{{minus .Pagination.Index 1}}</a></li> -->
                 <li><a href="javascript:" onclick="this.href='/item?cid='+$('#category').val()+'&sid='+$('#subcategory').val()+'&page={{minus .Pagination.Index 1}}'">{{minus .Pagination.Index 1}}</a></li>
                 {{end}}
-                <li class="active"><a href="javascript:" onclick="this.href='/item?cid='+$('#category').val()+'&sid='+$('#subcategory').val()+'&page={{.Pagination.Index}}'">{{.Pagination.Index}}</a></li>
+                <li class="active"><a href="javascript:" onclick="this.href='/item?cid='+$('#category').val()+'&sid='+$('#subcategory').val()+'&page={{.Pagination.Index}}'" id="pageIndex">{{.Pagination.Index}}</a></li>
                 {{if le (plus .Pagination.Index 1) .Pagination.Count}}
                 <li><a href="javascript:" onclick="this.href='/item?cid='+$('#category').val()+'&sid='+$('#subcategory').val()+'&page={{plus .Pagination.Index 1}}'">{{plus .Pagination.Index 1}}</a></li>
                 {{end}} {{if le (plus .Pagination.Index 2) .Pagination.Count}}

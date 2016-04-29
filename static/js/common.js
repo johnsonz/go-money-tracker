@@ -243,6 +243,19 @@ $(function() {
                 }
             });
     });
+    $(".detaildel").click(function() {
+        var ep = $(this).parent().parent();
+        $.post("/detail/del", {
+                id: ep.find("span[name='detailid']").html()
+            },
+            function(data, status) {
+                if (data) {
+                    location.href = "/detail?id="+$("input[name='itemid']").val()+"&page=" + $("#pageIndex").html();
+                } else {
+                    alert("error");
+                }
+            });
+    });
     setActiveNav();
 });
 

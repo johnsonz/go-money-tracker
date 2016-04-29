@@ -173,6 +173,7 @@ func main() {
 	http.HandleFunc("/item", ItemHandler)
 	http.HandleFunc("/item/del", ItemDelHandler)
 	http.HandleFunc("/detail", DetailHandler)
+	http.HandleFunc("/detail/del", DetailDelHandler)
 	http.HandleFunc("/user", UserHandler)
 	http.HandleFunc("/rmrept", RemoveReceiptHandler)
 	http.HandleFunc("/rmlabel", RemoveLabelHandler)
@@ -1914,22 +1915,7 @@ func (detail Detail) Count(iid int) (count int) {
 func DetailHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
 	if r.Method == "GET" {
-		if r.URL.Query().Get("action") == delAction {
-			detailID := r.URL.Query().Get("id")
-			var detail Detail
-			id, err := strconv.Atoi(detailID)
-			if err != nil {
-				glog.Errorf("get detail by item id err: %v", err)
-			}
-			detail.ID = id
-			detail.Operation.DeletedTime = time.Now().Format(LongFormat)
-			detail.Operation.DeletedBy = 0
-			rowsAffected := detail.DelEntity()
-			if rowsAffected > 0 {
-				//successful
-			}
-		}
-		itemID := r.URL.Query().Get("iid")
+		itemID := r.URL.Query().Get("id")
 		var detail Detail
 		iid, err := strconv.Atoi(itemID)
 		if err != nil {
@@ -1939,29 +1925,8 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 			detail.Item.ID = iid
 		}
 		page := r.URL.Query().Get("page")
-		pageIndex, err := strconv.Atoi(page)
-		if err != nil {
-			pageIndex = 1
-			glog.Infof("get page index err: %v", err)
-		}
-
-		var pagination Pagination
-		pagination.Size = pageSize
-		pagination.Index = pageIndex
 		count := detail.Count(iid)
-		if count%2 == 0 {
-			pagination.Count = count / 2
-		} else {
-			pagination.Count = count/2 + 1
-		}
-		pagination.Previous = pageIndex - 1
-		pagination.Next = pageIndex + 1
-		if pagination.Index > pagination.Count {
-			pagination.Index -= 1
-		}
-		if pagination.Index < 1 {
-			pagination.Index = 1
-		}
+		pagination := GetPagination(page, count)
 		details := detail.GetEntity(pagination)
 		data := struct {
 			Title      string
@@ -2100,8 +2065,29 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 				//insert successful
 			}
 		}
-		http.Redirect(w, r, "/detail?iid="+itemid, http.StatusMovedPermanently)
+		http.Redirect(w, r, "/detail?id="+itemid, http.StatusMovedPermanently)
 	}
+}
+func DetailDelHandler(w http.ResponseWriter, r *http.Request) {
+	CheckSessions(w, r)
+	did := r.FormValue("id")
+	var detail Detail
+	id, err := strconv.Atoi(did)
+	if err != nil {
+		glog.Errorf("get detail by item id err: %v", err)
+		fmt.Fprint(w, false)
+		return
+	}
+	detail.ID = id
+	detail.Operation.DeletedTime = time.Now().Format(LongFormat)
+	detail.Operation.DeletedBy = 0
+	rowsAffected := detail.DelEntity()
+	if rowsAffected > 0 {
+		//successful
+		fmt.Fprint(w, true)
+		return
+	}
+	fmt.Fprint(w, false)
 }
 func GetSubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 	CheckSessions(w, r)
