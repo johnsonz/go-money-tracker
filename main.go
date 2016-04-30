@@ -175,6 +175,7 @@ func main() {
 	http.HandleFunc("/detail", DetailHandler)
 	http.HandleFunc("/detail/del", DetailDelHandler)
 	http.HandleFunc("/user", UserHandler)
+	http.HandleFunc("/user/del", UserDelHandler)
 	http.HandleFunc("/rmrept", RemoveReceiptHandler)
 	http.HandleFunc("/rmlabel", RemoveLabelHandler)
 
@@ -424,29 +425,8 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		page := r.URL.Query().Get("page")
-		pageIndex, err := strconv.Atoi(page)
-		if err != nil {
-			pageIndex = 1
-			glog.Infof("get page index err: %v", err)
-		}
-
-		var pagination Pagination
-		pagination.Size = pageSize
-		pagination.Index = pageIndex
 		count := user.Count()
-		if count%2 == 0 {
-			pagination.Count = count / 2
-		} else {
-			pagination.Count = count/2 + 1
-		}
-		pagination.Previous = pageIndex - 1
-		pagination.Next = pageIndex + 1
-		if pagination.Index > pagination.Count {
-			pagination.Index -= 1
-		}
-		if pagination.Index < 1 {
-			pagination.Index = 1
-		}
+		pagination := GetPagination(page, count)
 		users := user.GetEntity(pagination)
 		data := struct {
 			Title      string
@@ -501,6 +481,26 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/user?page="+pageIndex, http.StatusMovedPermanently)
 	}
+}
+func UserDelHandler(w http.ResponseWriter, r *http.Request) {
+	userid := r.FormValue("id")
+	id, err := strconv.Atoi(userid)
+	if err != nil {
+		glog.Errorf("convert userid %s err: %v", userid, err)
+		fmt.Fprint(w, false)
+		return
+	}
+	var user User
+	user.ID = id
+	user.Operation.DeletedTime = time.Now().Format(LongFormat)
+	user.Operation.DeletedBy = 0
+	rowsAffected := user.DelEntity()
+	if rowsAffected > 0 {
+		//successful
+		fmt.Fprint(w, true)
+		return
+	}
+	fmt.Fprint(w, false)
 }
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {

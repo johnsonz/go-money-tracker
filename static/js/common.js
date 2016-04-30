@@ -258,6 +258,19 @@ $(function() {
                 }
             });
     });
+    $(".userdel").click(function() {
+        var ep = $(this).parent().parent();
+        $.post("/user/del", {
+                id: ep.find("span[name='userid']").html()
+            },
+            function(data, status) {
+                if (data) {
+                    location.href = "/user?page=" + $("#pageIndex").html();
+                } else {
+                    alert("error");
+                }
+            });
+    });
     setActiveNav();
 });
 
