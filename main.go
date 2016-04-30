@@ -1408,7 +1408,7 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 			// 	glog.Errorf("convert string %s to int err: %v", ucate, err)
 			// }
 			usubcate := r.FormValue("updatedsubcategory")
-			sid, err := strconv.Atoi(usubcate)
+			sid, err = strconv.Atoi(usubcate)
 			if err != nil {
 				glog.Errorf("convert string %s to int err: %v", usubcate, err)
 			}
