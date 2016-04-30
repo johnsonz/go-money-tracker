@@ -2,7 +2,7 @@
 <form action="subcategory" method="POST">
     <div class="wrap-primary">
         <label class="control-label">Category</label>
-        <select name="category">
+        <select name="category" id="getsubcategory">
             {{range .Categories}}
             <option value="{{.ID}}" {{if .Selected}}selected="selected" {{end}}>{{.Name}}</option>
             {{end}}

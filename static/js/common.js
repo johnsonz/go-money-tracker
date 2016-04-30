@@ -9,7 +9,6 @@ $(function() {
     $("#category,#updatedcategory").change(function() {
         var options = '';
         var flag = $(this).attr("id");
-
         $.getJSON("/getsubcategory?id=" + $(this).val(), function(data) {
             $.each(data, function(key, val) {
                 options += '<option value="' + val.ID + '" >' + val.Name + '</option>';
@@ -20,6 +19,9 @@ $(function() {
                 $("#updatedsubcategory").html(options);
             }
         });
+    });
+    $("#getsubcategory").change(function(){
+        location.href="/subcategory?id="+$(this).val();
     });
     $(".smallimg").click(function(e) {
         $("body").find("#bigimg").remove();
