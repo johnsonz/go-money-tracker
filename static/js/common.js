@@ -20,8 +20,8 @@ $(function() {
             }
         });
     });
-    $("#getsubcategory").change(function(){
-        location.href="/subcategory?id="+$(this).val();
+    $("#getsubcategory").change(function() {
+        location.href = "/subcategory?id=" + $(this).val();
     });
     $(".smallimg").click(function(e) {
         $("body").find("#bigimg").remove();
@@ -211,10 +211,29 @@ $(function() {
         var id = element.parent().parent().find("span[name='userid']").html();
         $('#updatedid').val(id);
     });
+    $('#Modal-Confirm-Category').on('show.bs.modal', function(event) {
+        var element = $(event.relatedTarget) // element that triggered the modal
+        var id = element.parent().parent().find("span[name='cateid']").html();
+        $('#updatedid').val(id);
+    });
+    $('#Modal-Confirm-Subcategory').on('show.bs.modal', function(event) {
+        var element = $(event.relatedTarget) // element that triggered the modal
+        var id = element.parent().parent().find("span[name='subcateid']").html();
+        $('#updatedid').val(id);
+    });
+    $('#Modal-Confirm-Item').on('show.bs.modal', function(event) {
+        var element = $(event.relatedTarget) // element that triggered the modal
+        var id = element.parent().parent().find("span[name='itemid']").html();
+        $('#updatedid').val(id);
+    });
+    $('#Modal-Confirm-Detail').on('show.bs.modal', function(event) {
+        var element = $(event.relatedTarget) // element that triggered the modal
+        var id = element.parent().parent().find("span[name='detailid']").html();
+        $('#updatedid').val(id);
+    });
     $(".catedel").click(function() {
-        var ep = $(this).parent().parent();
         $.post("/category/del", {
-                id: ep.find("span[name='cateid']").html()
+                id: $('#updatedid').val()
             },
             function(data, status) {
                 if (data) {
@@ -225,26 +244,24 @@ $(function() {
             });
     });
     $(".subcatedel").click(function() {
-        var ep = $(this).parent().parent();
         $.post("/subcategory/del", {
-                id: ep.find("span[name='subcateid']").html()
+                id: $('#updatedid').val()
             },
             function(data, status) {
                 if (data) {
-                    location.href = "/subcategory?id="+$("select[name='category']").val()+"&page=" + $("#pageIndex").html();
+                    location.href = "/subcategory?id=" + $("select[name='category']").val() + "&page=" + $("#pageIndex").html();
                 } else {
                     alert("error");
                 }
             });
     });
     $(".itemdel").click(function() {
-        var ep = $(this).parent().parent();
         $.post("/item/del", {
-                id: ep.find("span[name='itemid']").html()
+                id: $('#updatedid').val()
             },
             function(data, status) {
                 if (data) {
-                    location.href = "/item?cid="+$("select[name='category']").val()+"&sid"+$("select[name='subcategory']").val()+"&page=" + $("#pageIndex").html();
+                    location.href = "/item?cid=" + $("select[name='category']").val() + "&sid" + $("select[name='subcategory']").val() + "&page=" + $("#pageIndex").html();
                 } else {
                     alert("error");
                 }
@@ -253,11 +270,11 @@ $(function() {
     $(".detaildel").click(function() {
         var ep = $(this).parent().parent();
         $.post("/detail/del", {
-                id: ep.find("span[name='detailid']").html()
+                id: $('#updatedid').val()
             },
             function(data, status) {
                 if (data) {
-                    location.href = "/detail?id="+$("input[name='itemid']").val()+"&page=" + $("#pageIndex").html();
+                    location.href = "/detail?id=" + $("input[name='itemid']").val() + "&page=" + $("#pageIndex").html();
                 } else {
                     alert("error");
                 }

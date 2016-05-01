@@ -28,7 +28,8 @@
                 <td><span name="subcatecby">{{.CreatedBy}}</span></td>
                 <td><a href="javascript:viod(0)" data-toggle="modal" data-target="#Modal-Subcate" class="btn btn-link edit">Edit</td>
                 <!-- <td><a href="/subcategory?id={{.Category.ID}}&sid={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td> -->
-                <td><a href="javascript:void(0)" class="btn btn-link subcatedel">Delete</td>
+                <td><a href="javascript:" class="btn btn-link" data-toggle="modal" data-target="#Modal-Confirm-Subcategory">Delete</td>
+
             </tr>
             {{end}}
             {{else}}
@@ -81,6 +82,22 @@
 
             </ul>
         </nav>
+    </div>
+    <div class="modal fade" id="Modal-Confirm-Subcategory" tabindex="-1" role="dialog" aria-labelledby="ModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    Confirm
+                </div>
+                <div class="modal-body">
+                    This record will be permanently deleted and cannot be recovered. Are you sure?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <a class="btn btn-danger btn-ok subcatedel">Delete</a>
+                </div>
+            </div>
+        </div>
     </div>
     <input type="text" name="updatedid" id="updatedid"  hidden="hidden">
     <div class="modal fade" id="Modal-Subcate" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
