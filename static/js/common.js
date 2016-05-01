@@ -206,6 +206,11 @@ $(function() {
         modal.find('.modal-body #createdtime').val(time);
         modal.find('.modal-body #createdby').val(by);
     });
+    $('#Modal-Confirm-User').on('show.bs.modal', function(event) {
+        var element = $(event.relatedTarget) // element that triggered the modal
+        var id = element.parent().parent().find("span[name='userid']").html();
+        $('#updatedid').val(id);
+    });
     $(".catedel").click(function() {
         var ep = $(this).parent().parent();
         $.post("/category/del", {
@@ -259,9 +264,8 @@ $(function() {
             });
     });
     $(".userdel").click(function() {
-        var ep = $(this).parent().parent();
         $.post("/user/del", {
-                id: ep.find("span[name='userid']").html()
+                id: $('#updatedid').val()
             },
             function(data, status) {
                 if (data) {

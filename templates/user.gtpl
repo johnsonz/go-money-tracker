@@ -39,7 +39,7 @@
                 <td><span name="usercby">{{.Operation.CreatedBy}}</span></td>
                 <td><a href="javascript:" data-toggle="modal" data-target="#Modal-User" class="btn btn-link edit">Edit</td>
                 <!-- <td><a href="/user?id={{.ID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td> -->
-                <td><a href="javascript:void(0)" class="btn btn-link userdel">Delete</td>
+                <td><a href="javascript:" class="btn btn-link" data-toggle="modal" data-target="#Modal-Confirm-User">Delete</td>
 
             </tr>
             {{end}}
@@ -95,7 +95,23 @@
                     </ul>
                     </nav>
     </div>
-    <input type="text" name="updatedid" id="updatedid"  hidden="hidden">
+    <div class="modal fade" id="Modal-Confirm-User" tabindex="-1" role="dialog" aria-labelledby="ModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    Confirm
+                </div>
+                <div class="modal-body">
+                    This record will be permanently deleted and cannot be recovered. Are you sure?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <a class="btn btn-danger btn-ok userdel">Delete</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <input type="text" name="updatedid" id="updatedid" hidden="hidden">
     <div class="modal fade" id="Modal-User" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
