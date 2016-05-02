@@ -268,7 +268,6 @@ $(function() {
             });
     });
     $(".detaildel").click(function() {
-        var ep = $(this).parent().parent();
         $.post("/detail/del", {
                 id: $('#updatedid').val()
             },

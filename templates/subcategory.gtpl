@@ -22,7 +22,8 @@
             </tr>
             {{if .Subcategories}}{{range $index,$subcate:= .Subcategories}}
             <tr>
-                <td><span name="subcateid">{{plus $index 1}}</span></td>
+                <td hidden="hidden"><span name="subcateid">{{.ID}}</span></td>
+                <td><span name="subcateindex">{{plus $index 1}}</span></td>
                 <td><span name="subcatename">{{.Name}}</span></td>
                 <td><span name="subcatectime">{{.CreatedTime}}</span></td>
                 <td><span name="subcatecby">{{.CreatedBy}}</span></td>

@@ -78,7 +78,8 @@
             </tr>
             {{if .Items}}{{range $index,$item:= .Items}}
             <tr>
-                <td><span name="itemid">{{plus $index 1}}</span></td>
+                <td hidden="hidden"><span name="itemid">{{.ID}}</span></td>
+                <td><span name="itemIndex">{{plus $index 1}}</span></td>
                 <td><span name="itemcate">{{.Subcategory.Category.Name}}</span></td>
                 <td><span name="itemsubcate">{{.Subcategory.Name}}</span></td>
                 <td><span name="itemstore">{{.Store}}</span></td>

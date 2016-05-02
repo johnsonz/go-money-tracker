@@ -64,7 +64,8 @@
             </tr>
             {{if .Details}}{{range $index,$detail:=.Details}}
             <tr>
-                <td><span name="detailid">{{plus $index 1}}</span></td>
+                <td hidden="hidden"><span name="detailid">{{.ID}}</span></td>
+                <td><span name="detailindex">{{plus $index 1}}</span></td>
                 <td><span name="detailname">{{.Name}}</span></td>
                 <td><span name="detailprice">{{.Price}}</span></td>
                 <td><span name="detailquan">{{.Quantity}}</span></td>

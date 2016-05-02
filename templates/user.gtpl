@@ -29,7 +29,8 @@
 
             {{if .Users}} {{range $index,$user:=.Users}}
             <tr>
-                <td><span name="userid">{{plus $index 1}}</span></td>
+                <td hidden="hidden"><span name="userid">{{.ID}}</span></td>
+                <td><span name="userindex">{{plus $index 1}}</span></td>
                 <td><span name="username">{{.Username}}</span></td>
                 <td><span name="usernick">{{.Nick}}</span></td>
                 <td><span name="userhost">{{.Hostname}}</span></td>
@@ -45,7 +46,7 @@
             {{end}}
             {{else}}
                 <tr>
-                    <td colspan="7">
+                    <td colspan="9">
                         <blockquote>
                         <p>No data found.</p>
                         </blockquote>
