@@ -50,7 +50,7 @@
     <div class="wrap-table">
         <table class="table table-striped table-bordered table-hover table-condensed">
             <tr>
-                <th>Index</th>
+                <th>#</th>
                 <th>Name</th>
                 <th>Price</th>
                 <th>Quantity</th>
@@ -62,9 +62,9 @@
                 <th>Created By</th>
                 <th colspan="2">Action</th>
             </tr>
-            {{range .Details}}
+            {{range $index,$detail:=.Details}}
             <tr>
-                <td><span name="detailid">{{.ID}}</span></td>
+                <td><span name="detailid">{{plus $index 1}}</span></td>
                 <td><span name="detailname">{{.Name}}</span></td>
                 <td><span name="detailprice">{{.Price}}</span></td>
                 <td><span name="detailquan">{{.Quantity}}</span></td>

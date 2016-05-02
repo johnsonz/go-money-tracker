@@ -27,9 +27,9 @@
                 <th colspan="2">Action</th>
             </tr>
 
-            {{if .Users}} {{range .Users}}
+            {{if .Users}} {{range $index,$user:=.Users}}
             <tr>
-                <td><span name="userid">{{.ID}}</span></td>
+                <td><span name="userid">{{plus $index 1}}</span></td>
                 <td><span name="username">{{.Username}}</span></td>
                 <td><span name="usernick">{{.Nick}}</span></td>
                 <td><span name="userhost">{{.Hostname}}</span></td>

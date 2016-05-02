@@ -63,7 +63,7 @@
     <div class="wrap-table-item">
         <table class="table table-striped table-bordered table-hover table-condensed">
             <tr>
-                <th>Index</th>
+                <th>#</th>
                 <th>Category</th>
                 <th>Subcategory</th>
                 <th>Store</th>
@@ -76,9 +76,9 @@
                 <th>C.By</th>
                 <th colspan="4">Action</th>
             </tr>
-            {{if .Items}}{{range .Items}}
+            {{if .Items}}{{range $index,$item:= .Items}}
             <tr>
-                <td><span name="itemid">{{.ID}}</span></td>
+                <td><span name="itemid">{{plus $index 1}}</span></td>
                 <td><span name="itemcate">{{.Subcategory.Category.Name}}</span></td>
                 <td><span name="itemsubcate">{{.Subcategory.Name}}</span></td>
                 <td><span name="itemstore">{{.Store}}</span></td>

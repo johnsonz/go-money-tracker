@@ -16,9 +16,9 @@
                 <th colspan="4">Action</th>
             </tr>
 
-            {{if .Categories}} {{range .Categories}}
+            {{if .Categories}} {{range $index,$cate:=.Categories}}
             <tr>
-                <td><span name="cateid">{{.ID}}</span></td>
+                <td><span name="cateid">{{plus $index 1}}</span></td>
                 <td><span name="catename">{{.Name}}</span></td>
                 <td><span name="catectime">{{.CreatedTime}}</span></td>
                 <td><span name="catecby">{{.CreatedBy}}</span></td>
