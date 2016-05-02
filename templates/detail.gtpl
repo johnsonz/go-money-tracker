@@ -62,7 +62,7 @@
                 <th>Created By</th>
                 <th colspan="2">Action</th>
             </tr>
-            {{range $index,$detail:=.Details}}
+            {{if .Details}}{{range $index,$detail:=.Details}}
             <tr>
                 <td><span name="detailid">{{plus $index 1}}</span></td>
                 <td><span name="detailname">{{.Name}}</span></td>
@@ -78,6 +78,15 @@
                 <!-- <td><a href="/detail?id={{.ID}}&iid={{$.ItemID}}&action=del&page={{$.Pagination.Index}}" class="btn btn-link">Delete</td> -->
                 <td><a href="javascript:" class="btn btn-link" data-toggle="modal" data-target="#Modal-Confirm-Detail">Delete</td>
                 </tr>
+                {{end}}
+                {{else}}
+                    <tr>
+                        <td colspan="11">
+                            <blockquote>
+                            <p>No data found.</p>
+                            </blockquote>
+                        </td>
+                    </tr>
                 {{end}}
             </table>
             <nav>
