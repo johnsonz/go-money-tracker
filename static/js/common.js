@@ -6,16 +6,18 @@ $(function() {
         dateFormat: "yy-mm-dd"
     });
     //get subcategory when select category
-    $("#category,#updatedcategory").change(function() {
+    $("#createdcategory,#updatedcategory").change(function() {
         var options = '';
         var flag = $(this).attr("id");
         $.getJSON("/getsubcategory?id=" + $(this).val(), function(data) {
             $.each(data, function(key, val) {
                 options += '<option value="' + val.ID + '" >' + val.Name + '</option>';
             });
-            if (flag == "category") {
-                $("#subcategory").html(options);
+            if (flag == "createdcategory") {
+                $("#createdsubcategory").val("");
+                $("#createdsubcategory").html(options);
             } else {
+                $("#updatedsubcategory").val("");
                 $("#updatedsubcategory").html(options);
             }
         });

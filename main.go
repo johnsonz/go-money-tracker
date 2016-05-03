@@ -462,11 +462,11 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 			if rowsAffected > 0 {
 				//successful
 			}
-		} else {
-			un := r.FormValue("username")
-			pwd := r.FormValue("password")
-			nick := r.FormValue("nick")
-			hn := r.FormValue("hostname")
+		} else if r.FormValue("create") == "Create" {
+			un := r.FormValue("createdusername")
+			pwd := r.FormValue("createdpassword")
+			nick := r.FormValue("creatednick")
+			hn := r.FormValue("createdhostname")
 			var user User
 			user.Username = un
 			user.Password = pwd
@@ -1036,8 +1036,8 @@ func SubcategoryHandler(w http.ResponseWriter, r *http.Request) {
 			if rowsAffected > 0 {
 				//successful
 			}
-		} else {
-			subcateName := r.FormValue("subcateName")
+		} else if r.FormValue("create") == "Create" {
+			subcateName := r.FormValue("createdsubcatename")
 			var subcate Subcategory
 			subcate.Name = subcateName
 
@@ -1445,13 +1445,13 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 			item.Operation.UpdatedTime = time.Now().Format(LongFormat)
 			item.Operation.UpdatedBy = 0
 			item.UpdEntity()
-		} else {
+		} else if r.FormValue("create") == "Create" {
 
-			purchasedDate := r.FormValue("purchaseddate")
-			store := r.FormValue("store")
-			address := r.FormValue("address")
-			remark := r.FormValue("remark")
-			file, _, err := r.FormFile("receiptimage")
+			purchasedDate := r.FormValue("createdpurchaseddate")
+			store := r.FormValue("createdstore")
+			address := r.FormValue("createdaddress")
+			remark := r.FormValue("createdremark")
+			file, _, err := r.FormFile("createdreceiptimage")
 			var receiptData []byte
 			switch err {
 			case nil:
@@ -2004,16 +2004,16 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 			if rowsAffected > 0 {
 				//insert successful
 			}
-		} else {
+		} else if r.FormValue("create") == "Create" {
 			var detail Detail
 			iid, err := strconv.Atoi(itemid)
 			if err != nil {
 				glog.Fatalf("get item id %s err: %v", itemid, err)
 			}
 			detail.Item.ID = iid
-			name := r.FormValue("name")
+			name := r.FormValue("createdname")
 			detail.Name = name
-			price := r.FormValue("price")
+			price := r.FormValue("createdprice")
 			pri, err := strconv.ParseFloat(price, 64)
 			if err != nil {
 				detail.Price = 0.0
@@ -2021,7 +2021,7 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				detail.Price = pri
 			}
-			quantity := r.FormValue("quantity")
+			quantity := r.FormValue("createdquantity")
 			quan, err := strconv.ParseInt(quantity, 10, 64)
 			if err != nil {
 				detail.Quantity = 1
@@ -2030,7 +2030,7 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 				detail.Quantity = quan
 			}
 			var labeloneData, labeltwoData []byte
-			labelone, _, err := r.FormFile("labelone")
+			labelone, _, err := r.FormFile("createdlone")
 			switch err {
 			case nil:
 				labeloneData, err = ioutil.ReadAll(labelone)
@@ -2042,7 +2042,7 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 			default:
 				glog.Errorf("upload file err: %v\n", err)
 			}
-			labeltwo, _, err := r.FormFile("labeltwo")
+			labeltwo, _, err := r.FormFile("createdltwo")
 			switch err {
 			case nil:
 				labeltwoData, err = ioutil.ReadAll(labeltwo)
@@ -2056,7 +2056,7 @@ func DetailHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			detail.LabelOne = string(labeloneData)
 			detail.LabelTwo = string(labeltwoData)
-			remark := r.FormValue("remark")
+			remark := r.FormValue("createdremark")
 			detail.Remark = remark
 			detail.CreatedTime = time.Now().Format(LongFormat)
 			detail.CreatedBy = 0

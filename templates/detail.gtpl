@@ -2,50 +2,7 @@
 <form action="/detail" method="POST" enctype="multipart/form-data">
     <input type="hidden" name="itemid" value="{{.ItemID}}" readonly="readonly" />
     <div class="wrap-field">
-        <table class="table table-condensed">
-            <tr>
-                <td>Name:</td>
-                <td>
-                    <input type="text" name="name" />
-                </td>
-            </tr>
-            <tr>
-                <td>Price:</td>
-                <td>
-                    <input type="number" step="0.01" min="0" name="price" />
-                </td>
-            </tr>
-            <tr>
-                <td>Quantity:</td>
-                <td>
-                    <input type="number" min="0" name="quantity" value="1" />
-                </td>
-            </tr>
-            <tr>
-                <td>Label One:</td>
-                <td>
-                    <input type="file" name="labelone" />
-                </td>
-            </tr>
-            <tr>
-                <td>Label Two:</td>
-                <td>
-                    <input type="file" name="labeltwo" />
-                </td>
-            </tr>
-            <tr>
-                <td>Remark:</td>
-                <td>
-                    <input type="text" name="remark" />
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2">
-                    <input type="submit" value="Add" class="btn btn-primary" />
-                </td>
-            </tr>
-        </table>
-
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Modal-Create-Detail">Create new category</button>
     </div>
     <div class="wrap-table">
         <table class="table table-striped table-bordered table-hover table-condensed">
@@ -156,7 +113,6 @@
                     <h4 class="modal-title" id="ModalLabel">Edit</h4>
                 </div>
                 <div class="modal-body">
-                    <form>
                         <div class="form-group">
                             <label for="updatedname" class="control-label">Name:</label>
                             <input type="text" class="form-control" name="updatedname" id="updatedname">
@@ -167,7 +123,7 @@
                         </div>
                         <div class="form-group">
                             <label for="updatedquantity" class="control-label">Quantity:</label>
-                            <input type="number" step="1" min="0" name="updatedquantity" id="updatedquantity" class="datepicker form-control" />
+                            <input type="number" step="1" min="0" class="form-control" name="updatedquantity" id="updatedquantity" />
                         </div>
                         <div class="form-group">
                             <label for="updatedamount" class="control-label">Amount:</label>
@@ -195,11 +151,52 @@
                             <label for="createdby" class="control-label">Created By:</label>
                             <input type="text" class="form-control" id="createdby" disabled="disabled">
                         </div>
-                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" name="cancel" data-dismiss="modal">Cancel</button>
                     <input type="submit" name="update" value="Update" class="btn btn-primary" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="Modal-Create-Detail" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="ModalLabel">Create new detail</h4>
+                </div>
+                <div class="modal-body">
+                        <div class="form-group">
+                            <label for="createdname" class="control-label">Name:</label>
+                            <input type="text" class="form-control" name="createdname" id="createdname">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdprice" class="control-label">Price:</label>
+                            <input type="number" step="0.01" min="0" class="form-control" name="createdprice" id="createdprice">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdquantity" class="control-label">Quantity:</label>
+                            <input type="number" step="1" min="0" class="form-control" name="createdquantity" id="createdquantity" />
+                        </div>
+                        <div class="form-group">
+                            <label for="createdlone" class="control-label">LabelOne:</label>
+                            <div id="wraplone"></div>
+                            <input type="file" class="form-control" name="createdlone" id="createdlone">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdltwo" class="control-label">LabelTwo:</label>
+                            <div id="wrapltwo"></div>
+                            <input type="file" class="form-control" name="createdltwo" id="createdltwo">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdremark" class="control-label">Remark:</label>
+                            <input type="text" class="form-control" name="createdremark" id="createdremark">
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" name="cancel" data-dismiss="modal">Cancel</button>
+                    <input type="submit" name="create" value="Create" class="btn btn-primary" />
                 </div>
             </div>
         </div>

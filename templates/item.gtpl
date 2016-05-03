@@ -1,64 +1,7 @@
 {{template "header" .}} {{template "nav" .}}
 <form action="/item" method="POST" enctype="multipart/form-data">
     <div class="wrap-field">
-        <table class="table table-condensed">
-            <tr>
-                <td>Category:</td>
-                <td>
-                    <select name="category" id="category">
-                        {{range .Categories}}
-                        <option value="{{.ID}}" {{if .Selected}}selected="selected" {{end}}>{{.Name}}</option>
-                        {{end}}
-                    </select>
-                </td>
-            </tr>
-            <tr>
-                <td>Subcategory:</td>
-                <td>
-                    <select name="subcategory" id="subcategory">
-                        {{range .Subcategories}}
-                        <option value="{{.ID}}" {{if .Selected}}selected="selected" {{end}}>{{.Name}}</option>
-                        {{end}}
-                    </select>
-                </td>
-            </tr>
-            <tr>
-                <td>PurchasedDate:</td>
-                <td>
-                    <input type="text" name="purchaseddate" class="datepicker" />
-                </td>
-            </tr>
-            <tr>
-                <td>Store:</td>
-                <td>
-                    <input type="text" name="store" />
-                </td>
-            </tr>
-            <tr>
-                <td>Address:</td>
-                <td>
-                    <input type="text" name="address" />
-                </td>
-            </tr>
-            <tr>
-                <td>Remark:</td>
-                <td>
-                    <input type="text" name="remark" />
-                </td>
-            </tr>
-            <tr>
-                <td>Receipt Image:</td>
-                <td>
-                    <input type="file" name="receiptimage" />
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2">
-                    <input type="submit" value="Add" class="btn btn-primary" />
-                </td>
-            </tr>
-        </table>
-
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Modal-Create-Item">Create new item</button>
     </div>
     <div class="wrap-table-item">
         <table class="table table-striped table-bordered table-hover table-condensed">
@@ -175,7 +118,6 @@
                     <h4 class="modal-title" id="ModalLabel">Edit</h4>
                 </div>
                 <div class="modal-body">
-                    <form>
                         <div class="form-group">
                             <label for="updatedcategory" class="control-label">Category:</label>
                             <select name="updatedcategory" class="form-control" id="updatedcategory">
@@ -190,11 +132,11 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="store" class="control-label">Store:</label>
+                            <label for="updatedstore" class="control-label">Store:</label>
                             <input type="text" class="form-control" name="updatedstore" id="updatedstore">
                         </div>
                         <div class="form-group">
-                            <label for="address" class="control-label">Address:</label>
+                            <label for="updatedaddress" class="control-label">Address:</label>
                             <input type="text" class="form-control" name="updatedaddress" id="updatedaddress">
                         </div>
                         <div class="form-group">
@@ -202,13 +144,13 @@
                             <input type="text" name="updatedpurchaseddate" id="updatedpurchaseddate" class="datepicker form-control" />
                         </div>
                         <div class="form-group">
-                            <label for="receipt" class="control-label">Receipt:</label>
+                            <label for="updatedreceipt" class="control-label">Receipt:</label>
                             <div id="wrapreceip"></div>
-                            <input type="file" class="form-control" name="updatedreceipt" id="purchaseddatereceipt">
+                            <input type="file" class="form-control" name="updatedreceipt" id="updatedreceipt">
                         </div>
                         <div class="form-group">
-                            <label for="remark" class="control-label">Remark:</label>
-                            <input type="text" class="form-control" name="purchaseddateremark" id="purchaseddateremark">
+                            <label for="updatedremark" class="control-label">Remark:</label>
+                            <input type="text" class="form-control" name="updatedremark" id="updatedremark">
                         </div>
                         <div class="form-group">
                             <label for="createdtime" class="control-label">Created Time:</label>
@@ -218,11 +160,64 @@
                             <label for="createdby" class="control-label">Created By:</label>
                             <input type="text" class="form-control" id="createdby" disabled="disabled">
                         </div>
-                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" name="cancel" data-dismiss="modal">Cancel</button>
                     <input type="submit" name="update" value="Update" class="btn btn-primary" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="Modal-Create-Item" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="ModalLabel">Create new item</h4>
+                </div>
+                <div class="modal-body">
+                        <div class="form-group">
+                            <label for="createdcategory" class="control-label">Category:</label>
+                            <select name="createdcategory" class="form-control" id="createdcategory">
+                                {{range .Categories}}
+                                <option value="{{.ID}}" {{if .Selected}}selected="selected" {{end}}>{{.Name}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="createdsubcategory" class="control-label">Subcategory:</label>
+                            <select name="createdsubcategory" class="form-control" id="createdsubcategory">
+                                    {{range .Subcategories}}
+                                    <option value="{{.ID}}" {{if .Selected}}selected="selected" {{end}}>{{.Name}}</option>
+                                    {{end}}
+                                </select>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="createdstore" class="control-label">Store:</label>
+                            <input type="text" class="form-control" name="createdstore" id="createdstore">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdaddress" class="control-label">Address:</label>
+                            <input type="text" class="form-control" name="createdaddress" id="createdaddress">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdpurchaseddate" class="control-label">PurchasedDate:</label>
+                            <input type="text" name="createdpurchaseddate" id="createdpurchaseddate" class="datepicker form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label for="createdreceipt" class="control-label">Receipt:</label>
+                            <div id="wrapreceip"></div>
+                            <input type="file" class="form-control" name="createdreceipt" id="createdreceipt">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdremark" class="control-label">Remark:</label>
+                            <input type="text" class="form-control" name="createdremark" id="createdremark">
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" name="cancel" data-dismiss="modal">Cancel</button>
+                    <input type="submit" name="create" value="Create" class="btn btn-primary" />
                 </div>
             </div>
         </div>

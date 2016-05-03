@@ -2,16 +2,7 @@
 <form action="/user" method="post">
     <input type="text" hidden="hidden" name="pageIndex" value="{{.Pagination.Index}}" />
     <div class="wrap-primary">
-        <label for="inputName" class="control-label">Name</label>
-        <input type="text" name="username" id="username" />
-        <label for="inputName" class="control-label">Password</label>
-        <input type="password" name="password" id="password" />
-        <label for="inputName" class="control-label">Nick</label>
-        <input type="text" name="nick" id="nick" />
-        <label for="inputName" class="control-label">Host</label>
-        <input type="text" name="hostname" id="hostname" />
-
-        <input type="submit" value="Add" class="btn btn-primary" />
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Modal-Create-User">Create new user</button>
     </div>
     <div class="wrap-table">
         <table class="table table-striped table-bordered table-hover table-condensed">
@@ -121,7 +112,6 @@
                     <h4 class="modal-title" id="ModalLabel">Edit</h4>
                 </div>
                 <div class="modal-body">
-                    <form>
                         <div class="form-group">
                             <label for="username" class="control-label">Username:</label>
                             <input type="text" name="updatedname" class="form-control" id="username">
@@ -148,11 +138,42 @@
                             <input type="text" class="form-control" id="createdby" disabled="disabled">
                             </textarea>
                         </div>
-                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                     <input type="submit" name="update" value="Update" class="btn btn-primary" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="Modal-Create-User" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="ModalLabel">Create new user</h4>
+                </div>
+                <div class="modal-body">
+                        <div class="form-group">
+                            <label for="createdname" class="control-label">Username:</label>
+                            <input type="text" name="createdname" class="form-control" id="createdname">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdpassword" class="control-label">Password:</label>
+                            <input type="text" name="createdpassword" class="form-control" id="createdpassword">
+                        </div>
+                        <div class="form-group">
+                            <label for="creatednick" class="control-label">Nick:</label>
+                            <input type="text" name="creatednick" class="form-control" id="creatednick">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdhost" class="control-label">Hostname:</label>
+                            <input type="text" name="createdhost" class="form-control" id="createdhost">
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <input type="submit" name="create" value="Create" class="btn btn-primary" />
                 </div>
             </div>
         </div>
