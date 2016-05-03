@@ -2,9 +2,7 @@
 <form action="/category" method="post">
     <input type="text" hidden="hidden" name="pageIndex" id="pageIndex" value="{{.Pagination.Index}}" />
     <div class="wrap-primary">
-        <label for="inputCateName" class="control-label">Category</label>
-        <input type="text" name="cateName" id="inputCateName" />
-        <input type="submit" value="Add" class="btn btn-primary" />
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Modal-Create-Category">Create new category</button>
     </div>
     <div class="wrap-table">
         <table class="table table-striped table-bordered table-hover table-condensed">
@@ -101,15 +99,14 @@
         </div>
     </div>
     <input type="text" name="updatedid" id="updatedid" hidden="hidden">
-    <div class="modal fade" id="Modal" tabindex="-1" role="dialog" aria-labelledby="ModalLabel">
+    <div class="modal fade" id="Modal" tabindex="-1" role="dialog" aria-labelledby="ModalLabel-Update">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title" id="ModalLabel">Edit</h4>
+                    <h4 class="modal-title" id="ModalLabel-Update">Edit</h4>
                 </div>
                 <div class="modal-body">
-                    <form>
                         <div class="form-group">
                             <label for="catename" class="control-label">Name:</label>
                             <input type="text" name="updatedname" class="form-control" id="catename">
@@ -124,11 +121,30 @@
                             <input type="text" class="form-control" id="createdby" disabled="disabled">
                             </textarea>
                         </div>
-                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                     <input type="submit" name="update" value="Update" class="btn btn-primary" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="Modal-Create-Category" tabindex="-1" role="dialog" aria-labelledby="ModalLabel-Create">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="ModalLabel-Create">Create new category</h4>
+                </div>
+                <div class="modal-body">
+                        <div class="form-group">
+                            <label for="createdname" class="control-label">Name:</label>
+                            <input type="text" name="createdname" class="form-control" id="createdname">
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <input type="submit" name="create" value="Create" class="btn btn-primary" />
                 </div>
             </div>
         </div>

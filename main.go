@@ -789,8 +789,8 @@ func CategoryHandler(w http.ResponseWriter, r *http.Request) {
 				//successful
 			}
 
-		} else {
-			cateName := r.FormValue("cateName")
+		} else if r.FormValue("create") == "Create" {
+			cateName := r.FormValue("createdname")
 			var cate Category
 			cate.Name = cateName
 			cate.Operation.CreatedTime = time.Now().Format(LongFormat)
