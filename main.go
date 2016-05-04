@@ -1394,7 +1394,7 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		cateID := r.FormValue("category")
 		sid, err := strconv.Atoi(subcateID)
 		if err != nil {
-			glog.Errorf("convert sid to int err； %v \n", err)
+			glog.Errorf("convert sid to int err: %v \n", err)
 		}
 		if r.FormValue("update") == "Update" {
 			itemID := r.FormValue("updatedid")
@@ -1750,8 +1750,11 @@ func (detail Detail) UpdEntity() int64 {
 		res, err = stmt.Exec(edetail.Name, edetail.Price, edetail.Quantity, edetail.Remark,
 			edetail.OperationEncrypted.UpdatedTime, edetail.OperationEncrypted.UpdatedBy,
 			edetail.LabelTwo, edetail.ID)
+	} else {
+		res, err = stmt.Exec(edetail.Name, edetail.Price, edetail.Quantity, edetail.Remark,
+			edetail.OperationEncrypted.UpdatedTime, edetail.OperationEncrypted.UpdatedBy,
+			edetail.ID)
 	}
-
 	if err != nil {
 		glog.Errorf("stmt.Exec err: %v\n", err)
 	}
@@ -1772,7 +1775,7 @@ func (detail Detail) UpdEntity() int64 {
 	case err != nil:
 		glog.Errorf("get item amount err: %v\n", err)
 	default:
-		//
+		glog.Infof("get item amount %v", eitem.Amount)
 	}
 	//update amount
 	item := eitem.Decrypt()
