@@ -1,6 +1,6 @@
 {{template "header" .}} {{template "nav" .}}
 <form action="/item" method="POST" enctype="multipart/form-data">
-    <div class="wrap-field">
+    <div class="wrap-primary">
         <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Modal-Create-Item">Create new item</button>
     </div>
     <div class="wrap-table-item">

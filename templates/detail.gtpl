@@ -1,7 +1,7 @@
 {{template "header" .}} {{template "nav" .}}
 <form action="/detail" method="POST" enctype="multipart/form-data">
     <input type="hidden" name="itemid" value="{{.ItemID}}" readonly="readonly" />
-    <div class="wrap-field">
+    <div class="wrap-primary">
         <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Modal-Create-Detail">Create new category</button>
     </div>
     <div class="wrap-table">
