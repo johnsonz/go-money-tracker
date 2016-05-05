@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"go-money-tracker/mtacrypto"
-	"go-money-tracker/mtconverter"
 	"html/template"
 	"io/ioutil"
 	"net"
@@ -18,6 +16,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
+	"github.com/johnsonz/go-money-tracker/mtacrypto"
+	"github.com/johnsonz/go-money-tracker/mtconverter"
 	_ "github.com/mattn/go-sqlite3"
 )
 
