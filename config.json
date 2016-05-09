@@ -1,0 +1,6 @@
+{
+    "dbdrive": "sqlite3",
+    "dbname": "data.db",
+    "pagesize": 5,
+    "pagenavsize": 5
+}

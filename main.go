@@ -135,9 +135,16 @@ type Pagination struct {
 	Previous int
 	Next     int
 }
+type Config struct {
+	DbDrive     string `json:"dbdrive"`
+	DbName      string `json:"dbname"`
+	PageSize    int    `json:"pagesize"`
+	PageNavSize int    `json:"Pagenavsize"`
+}
 
 var store *sessions.CookieStore
 var templates *template.Template
+var config Config
 
 const (
 	dbDrive     = "sqlite3"
@@ -152,10 +159,19 @@ const (
 	delAction   = "del"
 	updAction   = "upd"
 	addAction   = "add"
+	configName  = "config.json"
 )
 
 func init() {
 	flag.Parse()
+	var err error
+	config, err = ParseConfig()
+	if err != nil {
+		config.DbDrive = dbDrive
+		config.DbName = dbName
+		config.PageSize = pageSize
+		config.PageNavSize = pageNavSize
+	}
 	templates = template.Must(template.New("templates").
 		Funcs(template.FuncMap{"getamount": GetAmount, "plus": func(m, n int) int { return m + n }, "minus": func(m, n int) int { return m - n }}).
 		ParseGlob("./templates/*.gtpl"))
@@ -198,7 +214,7 @@ func CheckSessions(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (user User) GetEntity(pagination Pagination) []User {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
@@ -221,7 +237,7 @@ func (user User) GetEntity(pagination Pagination) []User {
 	return users
 }
 func (user User) GetAllEntity() []User {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
@@ -247,7 +263,7 @@ func (user User) AddEntity() int64 {
 	user.Username = fmt.Sprintf("%X", mtcrypto.MD5(user.Username))
 	user.Password = fmt.Sprintf("%X", mtcrypto.MD5(user.Password))
 	euser := user.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
@@ -271,7 +287,7 @@ func (user User) UpdEntity() int64 {
 	user.Username = fmt.Sprintf("%X", mtcrypto.MD5(user.Username))
 	user.Password = fmt.Sprintf("%X", mtcrypto.MD5(user.Password))
 	euser := user.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
@@ -293,7 +309,7 @@ func (user User) UpdEntity() int64 {
 }
 func (user User) UpdLoginInfo() int64 {
 	euser := user.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
@@ -315,7 +331,7 @@ func (user User) UpdLoginInfo() int64 {
 }
 func (user User) DelEntity() int64 {
 	euser := user.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
@@ -400,7 +416,7 @@ func (euser UserEncrypted) Decrypt() User {
 	}
 }
 func (User User) Count() (count int) {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open sqlite err: %v\n", err)
 	}
@@ -614,7 +630,7 @@ func (op OperationEncrypted) Decryt() Operation {
 	}
 }
 func (cate Category) GetEntity(pagination Pagination) []Category {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Category->GetEntity->open sqlite err: %v\n", err)
 	}
@@ -637,7 +653,7 @@ func (cate Category) GetEntity(pagination Pagination) []Category {
 	return cates
 }
 func (cate Category) GetAllEntity() []Category {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Category->GetEntity->open sqlite err: %v\n", err)
 	}
@@ -661,7 +677,7 @@ func (cate Category) GetAllEntity() []Category {
 }
 func (cate Category) AddEntity() int64 {
 	ecate := cate.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
 	}
@@ -682,7 +698,7 @@ func (cate Category) AddEntity() int64 {
 }
 func (cate Category) UpdEntity() int64 {
 	ecate := cate.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
 	}
@@ -703,7 +719,7 @@ func (cate Category) UpdEntity() int64 {
 }
 func (cate Category) DelEntity() int64 {
 	ecate := cate.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
 	}
@@ -745,7 +761,7 @@ func (ecate CategoryEncrypted) Decrypt() Category {
 	}
 }
 func (cate Category) Count() (count int) {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open sqlite err: %v\n", err)
 	}
@@ -825,7 +841,7 @@ func CategoryDelHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (subcate Subcategory) GetEntity(pagination Pagination) []Subcategory {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Subcategory->GetEntity->open db err: %v\n", err)
 	}
@@ -848,7 +864,7 @@ func (subcate Subcategory) GetEntity(pagination Pagination) []Subcategory {
 	return subcates
 }
 func (subcate Subcategory) GetAllEntity() []Subcategory {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Subcategory->GetEntity->open db err: %v\n", err)
 	}
@@ -872,7 +888,7 @@ func (subcate Subcategory) GetAllEntity() []Subcategory {
 }
 func (subcate Subcategory) AddEntity() int64 {
 	esubcate := subcate.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Subcategory->AddEntity->open db err: %v\n", err)
 	}
@@ -893,7 +909,7 @@ func (subcate Subcategory) AddEntity() int64 {
 }
 func (subcate Subcategory) UpdEntity() int64 {
 	esubcate := subcate.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Subcategory->AddEntity->open db err: %v\n", err)
 	}
@@ -914,7 +930,7 @@ func (subcate Subcategory) UpdEntity() int64 {
 }
 func (subcate Subcategory) DelEntity() int64 {
 	ecate := subcate.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
 	}
@@ -958,7 +974,7 @@ func (esubcate SubcategoryEncrypted) Decrypt() Subcategory {
 	}
 }
 func (subcate Subcategory) Count() (count int) {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open sqlite err: %v\n", err)
 	}
@@ -966,7 +982,7 @@ func (subcate Subcategory) Count() (count int) {
 	return count
 }
 func (subcate Subcategory) CountByCategoryId(id int) (count int) {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open sqlite err: %v\n", err)
 	}
@@ -1075,7 +1091,7 @@ func SubcategoryDelHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, false)
 }
 func (item Item) GetEntity(pagination Pagination) []Item {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Item->GetEntity->open db err: %v\n", err)
 	}
@@ -1105,7 +1121,7 @@ func (item Item) GetEntity(pagination Pagination) []Item {
 	return items
 }
 func (item Item) GetAllEntity() []Item {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Item->GetEntity->open db err: %v\n", err)
 	}
@@ -1136,7 +1152,7 @@ func (item Item) GetAllEntity() []Item {
 }
 func (item Item) AddEntity() int64 {
 	eitem := item.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Item->AddEntity->open db err: %v\n", err)
 	}
@@ -1160,7 +1176,7 @@ func (item Item) AddEntity() int64 {
 }
 func (item Item) DelEntity() int64 {
 	eitem := item.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
 	}
@@ -1185,7 +1201,7 @@ func (item Item) UpdEntity() int64 {
 	var err error
 	eitem := item.Encrypt()
 
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Item->AddEntity->open db err: %v\n", err)
 	}
@@ -1221,7 +1237,7 @@ func (item Item) UpdEntity() int64 {
 }
 func (item Item) RemoveRceipt() int64 {
 	eitem := item.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
 	}
@@ -1320,7 +1336,7 @@ func (eitem ItemEncrypted) Decrypt() Item {
 	}
 }
 func (item Item) Count() (count int) {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open sqlite err: %v\n", err)
 	}
@@ -1513,7 +1529,7 @@ func ItemDelHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, false)
 }
 func (detail Detail) GetEntity(pagination Pagination) []Detail {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
@@ -1521,7 +1537,7 @@ func (detail Detail) GetEntity(pagination Pagination) []Detail {
 	if err != nil {
 		glog.Errorf("db prepare err: %v\n", err)
 	}
-	rows, err := stmt.Query(detail.Item.ID, pageSize, pageSize*(pagination.Index-1))
+	rows, err := stmt.Query(detail.Item.ID, pagination.Size, pagination.Size*(pagination.Index-1))
 	if err != nil {
 		glog.Errorf("exec err: %v\n", err)
 	}
@@ -1540,7 +1556,7 @@ func (detail Detail) GetEntity(pagination Pagination) []Detail {
 	return details
 }
 func (detail Detail) GetAllEntity() []Detail {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
@@ -1568,7 +1584,7 @@ func (detail Detail) GetAllEntity() []Detail {
 }
 func (detail Detail) AddEntity() int64 {
 	edetail := detail.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
@@ -1630,7 +1646,7 @@ func (detail Detail) AddEntity() int64 {
 }
 func (detail Detail) DelEntity() int64 {
 	edetail := detail.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
@@ -1702,7 +1718,7 @@ func (detail Detail) DelEntity() int64 {
 }
 func (detail Detail) UpdEntity() int64 {
 	edetail := detail.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open db err: %v\n", err)
 	}
@@ -1800,7 +1816,7 @@ func (detail Detail) UpdEntity() int64 {
 }
 func (detail Detail) RemoveLabel(label string) int64 {
 	edetail := detail.Encrypt()
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("Category->AddEntity->open sqlite err: %v\n", err)
 	}
@@ -1908,7 +1924,7 @@ func (edetail DetailEncrypted) Decrypt() Detail {
 	}
 }
 func (detail Detail) Count(iid int) (count int) {
-	db, err := sql.Open(dbDrive, "./data.db")
+	db, err := sql.Open(config.DbDrive, "./"+config.DbName)
 	if err != nil {
 		glog.Errorf("open sqlite err: %v\n", err)
 	}
@@ -2179,7 +2195,7 @@ func GetPagination(page string, count int) Pagination {
 	}
 
 	var pagination Pagination
-	pagination.Size = pageSize
+	pagination.Size = config.PageSize
 	pagination.Index = pageIndex
 	if count%pagination.Size == 0 {
 		pagination.Count = count / pagination.Size
@@ -2195,4 +2211,24 @@ func GetPagination(page string, count int) Pagination {
 		pagination.Index = 1
 	}
 	return pagination
+}
+func ParseConfig() (config Config, err error) {
+	// var config Config
+	// currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	// if err != nil {
+	// 	fmt.Printf("get current directory err: %v\n", err)
+	// }
+	jsontext, err := ioutil.ReadFile("./" + configName)
+	if err != nil {
+		glog.Errorf("read config.json file err: %v\n", err)
+		return config, err
+	}
+	err = json.Unmarshal(jsontext, &config)
+	if err != nil {
+		glog.Errorf("parse config.json file err: %v\n", err)
+		return config, err
+	}
+	glog.Infoln("parse config.json sucessfully.\n")
+
+	return config, nil
 }
