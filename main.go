@@ -1406,12 +1406,6 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 		// itemtemplate.Execute(w, data)
 		templates.ExecuteTemplate(w, "item.gtpl", data)
 	} else if r.Method == "POST" {
-		subcateID := r.FormValue("subcategory")
-		cateID := r.FormValue("category")
-		sid, err := strconv.Atoi(subcateID)
-		if err != nil {
-			glog.Errorf("convert sid to int err: %v \n", err)
-		}
 		if r.FormValue("update") == "Update" {
 			itemID := r.FormValue("updatedid")
 			id, err := strconv.Atoi(itemID)
@@ -1424,7 +1418,7 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 			// 	glog.Errorf("convert string %s to int err: %v", ucate, err)
 			// }
 			usubcate := r.FormValue("updatedsubcategory")
-			sid, err = strconv.Atoi(usubcate)
+			sid, err := strconv.Atoi(usubcate)
 			if err != nil {
 				glog.Errorf("convert string %s to int err: %v", usubcate, err)
 			}
@@ -1462,6 +1456,11 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 			item.Operation.UpdatedBy = 0
 			item.UpdEntity()
 		} else if r.FormValue("create") == "Create" {
+			subcateID := r.FormValue("createdsubcategory")
+			sid, err := strconv.Atoi(subcateID)
+			if err != nil {
+				glog.Errorf("convert sid to int err: %v \n", err)
+			}
 
 			purchasedDate := r.FormValue("createdpurchaseddate")
 			store := r.FormValue("createdstore")
@@ -1504,7 +1503,7 @@ func ItemHandler(w http.ResponseWriter, r *http.Request) {
 				//insert successful
 			}
 		}
-		http.Redirect(w, r, "/item?sid="+strconv.Itoa(sid)+"&cid="+cateID, http.StatusMovedPermanently)
+		http.Redirect(w, r, "/item", http.StatusMovedPermanently)
 	}
 }
 func ItemDelHandler(w http.ResponseWriter, r *http.Request) {
