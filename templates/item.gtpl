@@ -61,24 +61,24 @@
                 </li>
                 {{else}}
                 <li>
-                    <a href="javascript:" onclick="this.href='/item?cid='+$('#category').val()+'&sid='+$('#subcategory').val()+'&page={{.Pagination.Previous}}'" aria-label="Previous">
+                    <a href="/item?page={{.Pagination.Previous}}" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
                 {{end}} {{if gt (minus .Pagination.Index 2) 0}}
-                <li><a href="javascript:" onclick="this.href='/item?cid='+$('#category').val()+'&sid='+$('#subcategory').val()+'&page={{minus .Pagination.Index 1}}'">{{minus .Pagination.Index 2}}</a></li>
+                <li><a href="/item?page={{minus .Pagination.Index 1}}">{{minus .Pagination.Index 2}}</a></li>
                 {{end}} {{if gt (minus .Pagination.Index 1) 0}}
                 <!-- <li><a href="/item?page={{minus .Pagination.Index 1}}">{{minus .Pagination.Index 1}}</a></li> -->
-                <li><a href="javascript:" onclick="this.href='/item?cid='+$('#category').val()+'&sid='+$('#subcategory').val()+'&page={{minus .Pagination.Index 1}}'">{{minus .Pagination.Index 1}}</a></li>
+                <li><a href="/item?page={{minus .Pagination.Index 1}}">{{minus .Pagination.Index 1}}</a></li>
                 {{end}}
-                <li class="active"><a href="javascript:" onclick="this.href='/item?cid='+$('#category').val()+'&sid='+$('#subcategory').val()+'&page={{.Pagination.Index}}'" id="pageIndex">{{.Pagination.Index}}</a></li>
+                <li class="active"><a href="/item?page={{.Pagination.Index}}" id="pageIndex">{{.Pagination.Index}}</a></li>
                 {{if le (plus .Pagination.Index 1) .Pagination.Count}}
-                <li><a href="javascript:" onclick="this.href='/item?cid='+$('#category').val()+'&sid='+$('#subcategory').val()+'&page={{plus .Pagination.Index 1}}'">{{plus .Pagination.Index 1}}</a></li>
+                <li><a href="/item?page={{plus .Pagination.Index 1}}">{{plus .Pagination.Index 1}}</a></li>
                 {{end}} {{if le (plus .Pagination.Index 2) .Pagination.Count}}
-                <li><a href="javascript:" onclick="this.href='/item?cid='+$('#category').val()+'&sid='+$('#subcategory').val()+'&page={{plus .Pagination.Index 2}}'">{{plus .Pagination.Index 2}}</a></li>
+                <li><a href="/item?page={{plus .Pagination.Index 2}}">{{plus .Pagination.Index 2}}</a></li>
                 {{end}} {{if le .Pagination.Next .Pagination.Count}}
                 <li>
-                    <a href="javascript:" onclick="this.href='/item?cid='+$('#category').val()+'&sid='+$('#subcategory').val()+'&page={{.Pagination.Next}}'" aria-label="Next">
+                    <a href="/item?page={{.Pagination.Next}}" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
